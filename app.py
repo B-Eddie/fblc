@@ -1,6 +1,6 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash
-from firebase_admin import credentials, initialize_app, auth
+from firebase_admin import credentials, initialize_app, auth, db
 from dotenv import load_dotenv
 
 load_dotenv()  # Load environment variables from .env file
@@ -36,6 +36,29 @@ def sign_up():
     
     return render_template('sign_up.html')
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        try:
+            # Create a new Firebase user
+            user = auth.create_user(
+                email=email,
+                password=password
+            )
+            
+            # Save additional details to user custom claims if needed
+            auth.set_custom_user_claims(user.uid, {'role': 'user'})  # Example custom claim
+            
+            flash(f'Registered successfully!', 'success')
+            return redirect(url_for('select_role'))
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
+    
+    return render_template('role_selection.html')
+
+
 @app.route('/log-in', methods=['GET', 'POST'])
 def log_in():
     if request.method == 'POST':
@@ -54,5 +77,19 @@ def log_in():
 
     return render_template('log_in.html')
 
+
+@app.route('/select_role', methods=['POST'])
+def select_role():
+    role = request.form['role']  # Capture the role selected
+    # Store role to Firebase (assuming user data is available)
+    user_id = "example_user_id"  # Replace with actual user identifier
+    db.collection('users').document(user_id).set({
+        'role': role
+    }, merge=True)
+
+    return redirect(url_for('login'))
+
 if __name__ == '__main__':
     app.run(debug=True)
+
+

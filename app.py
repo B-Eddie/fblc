@@ -1,64 +1,58 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from firebase_config import get_database_ref
+import os
+from flask import Flask, render_template, request, redirect, url_for, flash
+from firebase_admin import credentials, initialize_app, auth
+from dotenv import load_dotenv
+
+load_dotenv()  # Load environment variables from .env file
 
 app = Flask(__name__)
-CORS(app)
+app.secret_key = os.urandom(24)  # Used for flashing messages
 
-@app.route("/")
-def home():
-    return jsonify({"message": "Welcome to the Ambulance Booking App API!"})
+# Initialize Firebase Admin SDK
+cred = credentials.Certificate("firebase-adminsdk.json")
+initialize_app(cred)
 
-@app.route("/book", methods=["POST"])
-def book_ambulance():
-    data = request.json
-    user_id = data.get("userId")
-    location = data.get("location")
+# Routes
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/sign-up', methods=['GET', 'POST'])
+def sign_up():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        
+        try:
+            # Create new Firebase user
+            user = auth.create_user(
+                email=email,
+                password=password
+            )
+            flash('User created successfully!', 'success')
+            return redirect(url_for('log_in'))
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
     
-    if not user_id or not location:
-        return jsonify({"error": "Missing userId or location"}), 400
+    return render_template('sign_up.html')
 
-    bookings_ref = get_database_ref("bookings")
-    booking = bookings_ref.push({
-        "userId": user_id,
-        "location": location,
-        "status": "pending"
-    })
+@app.route('/log-in', methods=['GET', 'POST'])
+def log_in():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
 
-    return jsonify({"message": "Ambulance booked successfully!", "bookingId": booking.key})
+        try:
+            # Authenticate the user using Firebase
+            user = auth.get_user_by_email(email)
+            # You can add password verification here, but Firebase Authentication manages it
 
-# booking status
-@app.route("/status/<user_id>", methods=["GET"])
-def get_status(user_id):
-    bookings_ref = get_database_ref("bookings")
-    bookings = bookings_ref.get()
-    user_booking = None
+            flash('Logged in successfully!', 'success')
+            return redirect(url_for('index'))  # Redirect to home page after login
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
 
-    if bookings:
-        for booking_id, booking in bookings.items():
-            if booking["userId"] == user_id:
-                user_booking = {**booking, "id": booking_id}
-                break
+    return render_template('log_in.html')
 
-    if user_booking:
-        return jsonify(user_booking)
-    return jsonify({"message": "No bookings found for this user"}), 404
-
-# update booking status
-@app.route("/update/<booking_id>", methods=["PATCH"])
-def update_status(booking_id):
-    data = request.json
-    new_status = data.get("status")
-
-    if not new_status:
-        return jsonify({"error": "Missing status"}), 400
-
-    booking_ref = get_database_ref(f"bookings/{booking_id}")
-    if booking_ref.get():
-        booking_ref.update({"status": new_status})
-        return jsonify({"message": "Status updated successfully"})
-    
-    return jsonify({"error": "Booking not found"}), 404
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)

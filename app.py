@@ -141,7 +141,7 @@ def register():
                 else:
                     error_message = response.json().get('error', {}).get('message', 'Unknown error')
                     print(f"Registration failed. Error message from Firebase: {error_message}")  # Debug print
-                    flash('Registration failed. Please try again.')
+                    flash('Registration failed. Please try again. Error: ' + str(error_message))
             
             except Exception as e:
                 print(f"An error occurred during registration: {e}")  # Debug print
@@ -298,4 +298,4 @@ def api_provider(provider_id):
         return jsonify({"error": "Provider not found"}), 404
 
 if __name__ == '__main__':
-    app.run(debug=False, port=5050)
+    app.run(debug=False)

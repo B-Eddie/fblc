@@ -1,5 +1,6 @@
 {% extends "base.html" %} {% block content %}
-<h1 class="text-3xl font-bold text-orange-600 mb-8">
+<div class="p-10">
+<h1 class="mb-8 text-3xl font-bold text-orange-600">
   Find Healthcare Providers
 </h1>
 
@@ -7,37 +8,37 @@
   <div class="flex flex-wrap gap-4 mb-4">
     <button
       id="filterAll"
-      class="bg-orange-500 hover:bg-orange-600 text-black font-bold py-2 px-4 rounded-full transition duration-300"
+      class="px-4 py-2 font-bold text-black transition duration-300 bg-orange-500 rounded-full hover:bg-orange-600"
     >
       All
     </button>
     <button
       id="filterDentist"
-      class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-4 rounded-full transition duration-300"
+      class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
     >
       Dentist
     </button>
     <button
       id="filterOptometrist"
-      class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-4 rounded-full transition duration-300"
+      class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
     >
       Optometrist
     </button>
     <button
       id="filterGP"
-      class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-4 rounded-full transition duration-300"
+      class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
     >
       General Practitioner
     </button>
     <button
       id="filterPediatrician"
-      class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-4 rounded-full transition duration-300"
+      class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
     >
       Pediatrician
     </button>
     <button
       id="filterDermatologist"
-      class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-4 rounded-full transition duration-300"
+      class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
     >
       Dermatologist
     </button>
@@ -48,7 +49,7 @@
     >
     <select
       id="sortDistance"
-      class="border border-orange-300 rounded-md p-2 bg-orange-50 text-orange-800"
+      class="p-2 text-orange-800 border border-orange-300 rounded-md bg-orange-50"
     >
       <option value="asc">Nearest first</option>
       <option value="desc">Farthest first</option>
@@ -56,26 +57,26 @@
   </div>
 </div>
 
-<div id="providerList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+<div id="providerList" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
   <!-- Provider cards will be dynamically inserted here -->
 </div>
 
 <!-- Modal for booking appointments -->
 <div
   id="bookingModal"
-  class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center"
+  class="fixed inset-0 items-center justify-center hidden bg-gray-600 bg-opacity-50"
 >
-  <div class="bg-accent p-8 rounded-lg shadow-xl max-w-md w-full">
-    <h2 id="modalTitle" class="text-2xl font-bold text-orange-600 mb-4"></h2>
+  <div class="w-full max-w-md p-8 rounded-lg shadow-xl bg-accent">
+    <h2 id="modalTitle" class="mb-4 text-2xl font-bold text-orange-600"></h2>
     <img
       id="modalImage"
       src="/placeholder.svg"
       alt="Provider"
-      class="w-full h-48 object-cover rounded-lg mb-4"
+      class="object-cover w-full h-48 mb-4 rounded-lg"
     />
-    <p id="modalSpecialty" class="text-gray-600 mb-2"></p>
-    <p id="modalAddress" class="text-gray-600 mb-2"></p>
-    <p id="modalPhone" class="text-gray-600 mb-4"></p>
+    <p id="modalSpecialty" class="mb-2 text-gray-600"></p>
+    <p id="modalAddress" class="mb-2 text-gray-600"></p>
+    <p id="modalPhone" class="mb-4 text-gray-600"></p>
     <form id="bookingForm" class="space-y-4">
       <div>
         <label
@@ -88,7 +89,7 @@
           id="appointmentDate"
           name="appointmentDate"
           required
-          class="mt-1 block w-full border border-orange-300 rounded-md shadow-sm p-2"
+          class="block w-full p-2 mt-1 border border-orange-300 rounded-md shadow-sm"
         />
       </div>
       <div>
@@ -102,7 +103,7 @@
           id="appointmentTime"
           name="appointmentTime"
           required
-          class="mt-1 block w-full border border-orange-300 rounded-md shadow-sm p-2"
+          class="block w-full p-2 mt-1 border border-orange-300 rounded-md shadow-sm"
         />
       </div>
       <div>
@@ -116,20 +117,20 @@
           id="appointmentType"
           name="appointmentType"
           required
-          class="mt-1 block w-full border border-orange-300 rounded-md shadow-sm p-2"
+          class="block w-full p-2 mt-1 border border-orange-300 rounded-md shadow-sm"
         />
       </div>
       <div class="flex justify-end space-x-4">
         <button
           type="button"
           id="closeModal"
-          class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300"
+          class="px-4 py-2 font-bold text-gray-800 transition duration-300 bg-gray-300 rounded-full hover:bg-gray-400"
         >
           Cancel
         </button>
         <button
           type="submit"
-          class="bg-orange-500 hover:bg-orange-600 text-black font-bold py-2 px-4 rounded-full transition duration-300"
+          class="px-4 py-2 font-bold text-black transition duration-300 bg-orange-500 rounded-full hover:bg-orange-600"
         >
           Book Appointment
         </button>
@@ -195,12 +196,12 @@
         card.className =
           "bg-accent shadow-lg rounded-lg border border-orange-200 overflow-hidden transition duration-300 transform hover:scale-105";
         card.innerHTML = `
-                <img src="https://source.unsplash.com/300x200/?doctor" alt="${provider.name}" class="w-full h-48 object-cover">
+                <img src="https://source.unsplash.com/300x200/?doctor" alt="${provider.name}" class="object-cover w-full h-48">
                 <div class="p-6">
-                    <h3 class="text-lg font-semibold text-orange-600 mb-2">${provider.name}</h3>
-                    <p class="text-gray-600 mb-2">${provider.specialty}</p>
-                    <p class="text-gray-600 mb-4">${provider.distance} miles away</p>
-                    <button class="bg-orange-500 hover:bg-orange-600 text-black font-bold py-2 px-4 rounded-full transition duration-300 book-appointment" data-id="${provider.id}">Book Appointment</button>
+                    <h3 class="mb-2 text-lg font-semibold text-orange-600">${provider.name}</h3>
+                    <p class="mb-2 text-gray-600">${provider.specialty}</p>
+                    <p class="mb-4 text-gray-600">${provider.distance} miles away</p>
+                    <button class="px-4 py-2 font-bold text-black transition duration-300 bg-orange-500 rounded-full hover:bg-orange-600 book-appointment" data-id="${provider.id}">Book Appointment</button>
                 </div>
             `;
         providerList.appendChild(card);
@@ -250,4 +251,5 @@
     });
   });
 </script>
+</div>
 {% endblock %}

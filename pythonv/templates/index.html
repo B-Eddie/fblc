@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-screen text-center">
+    <h1 class="text-4xl md:text-6xl font-bold text-orange-600 mb-6">
+        Welcome to HealthHub Connect
+    </h1>
+    <p class="text-xl text-orange-800 mb-8 max-w-2xl">
+        Empowering you to take control of your healthcare journey with easy access to services, appointments, and community support.
+    </p>
+    <div class="flex flex-col md:flex-row gap-4">
+        <a href="{{ url_for('register') }}" class="inline-flex items-center px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-md">
+            Get Started
+            <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+        </a>
+        <a href="#features" class="inline-flex items-center px-6 py-3 border border-orange-600 text-orange-600 hover:bg-orange-50 font-semibold rounded-md">
+            Learn More
+        </a>
+    </div>
+</div>
+{% endblock %}
+

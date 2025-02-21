@@ -1,42 +1,56 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
-    <h1 class="text-4xl md:text-6xl font-bold text-orange-600 mb-6">
+<div class="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center bg-gradient-to-r from-orange-100 to-orange-300 p-8 rounded-lg shadow-xl">
+    <h1 class="text-4xl md:text-6xl font-extrabold text-orange-600 mb-6 leading-tight">
         Welcome to HealthHub Connect
     </h1>
-    <p class="text-xl text-orange-800 mb-8 max-w-2xl">
+    <p class="text-xl text-orange-800 mb-8 max-w-2xl mx-auto">
         Empowering you to take control of your healthcare journey with easy access to services, appointments, and personalized health tracking.
     </p>
-    <div class="flex flex-col md:flex-row gap-4">
-        <a href="{{ url_for('register') }}" class="inline-flex items-center px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-md transition duration-300">
+    <div class="flex flex-col md:flex-row gap-6">
+        <a href="{{ url_for('register') }}" class="inline-flex items-center px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-md shadow-md hover:shadow-lg transition duration-300">
             Get Started
-            <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
         </a>
-        <a href="#features" class="inline-flex items-center px-6 py-3 border border-orange-600 text-orange-600 hover:bg-orange-100 font-semibold rounded-md transition duration-300">
+        <a href="#features" class="inline-flex items-center px-8 py-4 border-2 border-orange-600 text-orange-600 hover:bg-orange-100 font-semibold rounded-md shadow-md hover:shadow-lg transition duration-300">
             Learn More
         </a>
     </div>
 </div>
 
-<div id="features" class="mt-16">
-    <h2 class="text-3xl font-bold text-orange-600 mb-8 text-center">Our Features</h2>
+<div id="features" class="mt-16 max-w-7xl mx-auto px-6">
+    <h2 class="text-3xl font-bold text-orange-600 mb-12 text-center">Our Features</h2>
     <div class="grid md:grid-cols-3 gap-8">
-        <div class="bg-white p-6 rounded-lg shadow-md">
+        <!-- Feature 1: Easy Appointment Booking -->
+        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+            <div class="flex justify-center mb-4">
+                <img src="https://via.placeholder.com/100" alt="Appointment Icon" class="w-16 h-16">
+            </div>
             <h3 class="text-xl font-semibold text-orange-600 mb-4">Easy Appointment Booking</h3>
             <p class="text-gray-600">Schedule appointments with your healthcare providers quickly and easily.</p>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow-md">
+
+        <!-- Feature 2: Health Tracking -->
+        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+            <div class="flex justify-center mb-4">
+                <img src="https://via.placeholder.com/100" alt="Health Tracking Icon" class="w-16 h-16">
+            </div>
             <h3 class="text-xl font-semibold text-orange-600 mb-4">Health Tracking</h3>
             <p class="text-gray-600">Monitor your daily health metrics and visualize your progress over time.</p>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow-md">
+
+        <!-- Feature 3: Personalized Dashboard -->
+        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+            <div class="flex justify-center mb-4">
+                <img src="https://via.placeholder.com/100" alt="Dashboard Icon" class="w-16 h-16">
+            </div>
             <h3 class="text-xl font-semibold text-orange-600 mb-4">Personalized Dashboard</h3>
             <p class="text-gray-600">Get a quick overview of your upcoming appointments and health status.</p>
         </div>
     </div>
 </div>
-{% endblock %}
 
+{% endblock %}

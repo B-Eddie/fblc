@@ -16,7 +16,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key')
 csrf = CSRFProtect(app)
 
 # Initialize Firebase
-cred = credentials.Certificate("fblc/firebaseconfig.json")
+cred = credentials.Certificate("firebaseconfig.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -173,6 +173,13 @@ def dashboard():
 def appointments():
     appointments = db.collection('appointments').where('user_id', '==', current_user.id).order_by('date').stream()
     return render_template('appointments.html', appointments=appointments)
+
+@app.route('/find_providers')
+@login_required
+def find_providers():
+    # providers = db.collection('providers').where('verified', '==', True).stream()
+    # return render_template('find_providers.html', providers=providers)
+    return render_template('find_providers.html')
 
 @app.route('/book_appointment', methods=['GET', 'POST'])
 @login_required

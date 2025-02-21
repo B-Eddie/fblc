@@ -4,11 +4,16 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import os
 import firebase_admin
-from firebase_admin import credentials, firestore, auth
+from firebase_admin import credentials, firestore, auth, exceptions
 import uuid
+import requests
+from flask_wtf.csrf import CSRFProtect
+from flask_wtf import FlaskForm
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key')
+csrf = CSRFProtect(app)
 
 # Initialize Firebase
 cred = credentials.Certificate("fblc/firebaseconfig.json")
@@ -17,6 +22,12 @@ db = firestore.client()
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+
+# Firebase REST API configuration
+load_dotenv()
+FIREBASE_API_KEY = os.getenv('FIREBASE_API_KEY')
+if not FIREBASE_API_KEY:
+    raise ValueError("FIREBASE_API_KEY not found in environment variables")
 
 class User(UserMixin):
     def __init__(self, uid, email, name, language):
@@ -27,10 +38,14 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    user_doc = db.collection('users').document(user_id).get()
-    if user_doc.exists:
-        user_data = user_doc.to_dict()
-        return User(user_id, user_data['email'], user_data['name'], user_data['language'])
+
+    try:
+        user_doc = db.collection('users').document(user_id).get()
+        if user_doc.exists:
+            user_data = user_doc.to_dict()
+            return User(user_id, user_data['email'], user_data['name'], user_data['language'])
+    except Exception as e:
+        print(f"Error loading user: {e}")
     return None
 
 @app.route('/')
@@ -39,47 +54,111 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    form = FlaskForm()
     if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        try:
-            user = auth.get_user_by_email(email)
-            user_doc = db.collection('users').document(user.uid).get()
-            user_data = user_doc.to_dict()
-            if check_password_hash(user_data['password'], password):
-                login_user(User(user.uid, email, user_data['name'], user_data['language']))
-                return redirect(url_for('dashboard'))
-            else:
-                flash('Invalid email or password')
-        except:
-            flash('Invalid email or password')
-    return render_template('auth/login.html')
+        if form.validate_on_submit():
+            email = request.form.get('email')
+            password = request.form.get('password')
+            
+            try:
+                # Authenticate with Firebase REST API
+                url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
+                data = {
+                    "email": email,
+                    "password": password,
+                    "returnSecureToken": True
+                }
+                response = requests.post(url, json=data)
+                
+                if response.status_code == 200:
+                    id_token = response.json().get('idToken')
+                    try:
+                        decoded_token = auth.verify_id_token(id_token)
+                        uid = decoded_token['uid']
+                        user_doc = db.collection('users').document(uid).get()
+                        
+                        if user_doc.exists:
+                            user_data = user_doc.to_dict()
+                            user = User(uid, user_data['email'], user_data['name'], user_data['language'])
+                            login_user(user)
+                            return redirect(url_for('dashboard'))
+                        else:
+                            flash('User data not found.')
+                    except exceptions.FirebaseError as e:
+                        flash('Authentication failed.')
+                else:
+                    flash('Invalid email or password.')
+            except Exception as e:
+                flash('An error occurred during login.')
+                print(f"Login error: {e}")
+            
+    return render_template('auth/login.html', form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    form = FlaskForm()
     if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        name = request.form.get('name')
-        language = request.form.get('language')
-        try:
-            user = auth.create_user(email=email, password=password)
-            db.collection('users').document(user.uid).set({
-                'email': email,
-                'password': generate_password_hash(password),
-                'name': name,
-                'language': language
-            })
-            login_user(User(user.uid, email, name, language))
-            return redirect(url_for('dashboard'))
-        except:
-            flash('Email already exists')
-    return render_template('auth/register.html')
+        if form.validate_on_submit():
+            email = request.form.get('email')
+            password = request.form.get('password')
+            name = request.form.get('name')
+            language = request.form.get('language')
+            
+            try:
+                # Create user using Firebase Authentication REST API
+                url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_API_KEY}"
+                data = {
+                    "email": email,
+                    "password": password,
+                    "returnSecureToken": True
+                }
+                print(f"Sending registration request for {email}...")  # Debug print
+                response = requests.post(url, json=data)
+                
+                # Print the response from Firebase for debugging
+                print(f"Response status code: {response.status_code}")
+                print(f"Response JSON: {response.json()}")
+                
+                if response.status_code == 200:
+                    user_data = response.json()
+                    uid = user_data['localId']  # Get the UID of the created user
+                    print(f"User created successfully with UID: {uid}")  # Debug print
+                    
+                    # Store additional user data in Firestore
+                    db.collection('users').document(uid).set({
+                        'email': email,
+                        'name': name,
+                        'language': language,
+                        'created_at': firestore.SERVER_TIMESTAMP
+                    })
+                    print(f"User data saved to Firestore.")  # Debug print
+                    
+                    # Log the user in
+                    new_user = User(uid, email, name, language)
+                    login_user(new_user)
+                    print(f"User logged in and redirected to dashboard.")  # Debug print
+                    return redirect(url_for('dashboard'))
+                else:
+                    error_message = response.json().get('error', {}).get('message', 'Unknown error')
+                    print(f"Registration failed. Error message from Firebase: {error_message}")  # Debug print
+                    flash('Registration failed. Please try again.')
+            
+            except Exception as e:
+                print(f"An error occurred during registration: {e}")  # Debug print
+                flash('An error occurred during registration.')
+            
+    return render_template('auth/register.html', form=form)
+
 
 @app.route('/logout')
 @login_required
 def logout():
-    logout_user()
+    try:
+        logout_user()
+        flash('Successfully logged out.')
+    except Exception as e:
+        flash('Error during logout.')
+        print(f"Logout error: {e}")
     return redirect(url_for('index'))
 
 @app.route('/dashboard')
@@ -212,5 +291,5 @@ def api_provider(provider_id):
         return jsonify({"error": "Provider not found"}), 404
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
 

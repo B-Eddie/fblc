@@ -7,10 +7,14 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "*.{js,ts,jsx,tsx,mdx}",
+    "./templates/*.{html}",
+    "./templates/**/*.html",
+    "./static/src/**/*.js"
   ],
   theme: {
     extend: {
       colors: {
+        accent: "#fff",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {

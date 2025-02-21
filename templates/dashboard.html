@@ -1,70 +1,111 @@
-{% extends "base.html" %}
-
-{% block content %}
-<h1 class="text-3xl font-bold text-orange-600 mb-8">Welcome, {{ current_user.name }}!</h1>
+{% extends "base.html" %} {% block content %}
+<h1 class="text-3xl font-bold text-orange-600 mb-8">
+  Welcome, {{ current_user.name }}!
+</h1>
 
 <div class="grid md:grid-cols-2 gap-8">
-    <div class="bg-black shadow-lg rounded-lg border border-orange-200">
-        <div class="p-4 border-b border-orange-200">
-            <h2 class="text-lg font-semibold text-orange-700 flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                Upcoming Appointments
-            </h2>
-        </div>
-        <div class="p-4">
-            {% if appointments %}
-                <ul class="space-y-2">
-                    {% for appointment in appointments %}
-                    <li class="flex justify-between items-center hover:bg-orange-50 p-2 rounded">
-                        <span>{{ appointment.doctor_name }} - {{ appointment.type }}</span>
-                        <span class="text-sm text-orange-600">{{ appointment.date.strftime('%Y-%m-%d %H:%M') }}</span>
-                    </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p class="text-gray-600">No upcoming appointments.</p>
-            {% endif %}
-            <a href="{{ url_for('book_appointment') }}" class="mt-4 inline-block bg-orange-600 hover:bg-orange-700 text-black font-bold py-2 px-4 rounded-md transition duration-300">Book New Appointment</a>
-        </div>
+  <div class="bg-accent shadow-lg rounded-lg border border-orange-200">
+    <div class="p-4 border-b border-orange-200">
+      <h2 class="text-lg font-semibold text-orange-700 flex items-center">
+        <svg
+          class="w-5 h-5 mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
+        </svg>
+        Upcoming Appointments
+      </h2>
     </div>
+    <div class="p-4">
+      {% if appointments %}
+      <ul class="space-y-2">
+        {% for appointment in appointments %}
+        <li
+          class="flex justify-between items-center hover:bg-orange-50 p-2 rounded"
+        >
+          <span>{{ appointment.doctor_name }} - {{ appointment.type }}</span>
+          <span class="text-sm text-orange-600"
+            >{{ appointment.date.strftime('%Y-%m-%d %H:%M') }}</span
+          >
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-gray-600">No upcoming appointments.</p>
+      {% endif %}
+      <a
+        href="{{ url_for('book_appointment') }}"
+        class="mt-4 inline-block bg-orange-600 hover:bg-orange-700 text-black font-bold py-2 px-4 rounded-md transition duration-300"
+        >Book New Appointment</a
+      >
+    </div>
+  </div>
 
-    <div class="bg-black shadow-lg rounded-lg border border-orange-200">
-        <div class="p-4 border-b border-orange-200">
-            <h2 class="text-lg font-semibold text-orange-700 flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                Health Overview
-            </h2>
-        </div>
-        <div class="p-4">
-            {% if health_data %}
-                <div class="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                        <p class="text-2xl font-bold text-orange-600">{{ health_data.steps }}</p>
-                        <p class="text-gray-600">Steps</p>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold text-orange-600">{{ health_data.calories }}</p>
-                        <p class="text-gray-600">Calories</p>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold text-orange-600">{{ health_data.sleep_hours }}</p>
-                        <p class="text-gray-600">Sleep (hours)</p>
-                    </div>
-                </div>
-            {% else %}
-                <p class="text-gray-600">No health data available.</p>
-            {% endif %}
-            <a href="{{ url_for('health_tracker') }}" class="mt-4 inline-block bg-orange-600 hover:bg-orange-700 text-black font-bold py-2 px-4 rounded-md transition duration-300">View Health Tracker</a>
-        </div>
+  <div class="bg-accent shadow-lg rounded-lg border border-orange-200">
+    <div class="p-4 border-b border-orange-200">
+      <h2 class="text-lg font-semibold text-orange-700 flex items-center">
+        <svg
+          class="w-5 h-5 mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
+        </svg>
+        Health Overview
+      </h2>
     </div>
+    <div class="p-4">
+      {% if health_data %}
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div>
+          <p class="text-2xl font-bold text-orange-600">
+            {{ health_data.steps }}
+          </p>
+          <p class="text-gray-600">Steps</p>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-orange-600">
+            {{ health_data.calories }}
+          </p>
+          <p class="text-gray-600">Calories</p>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-orange-600">
+            {{ health_data.sleep_hours }}
+          </p>
+          <p class="text-gray-600">Sleep (hours)</p>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-gray-600">No health data available.</p>
+      {% endif %}
+      <a
+        href="{{ url_for('health_tracker') }}"
+        class="mt-4 inline-block bg-orange-600 hover:bg-orange-700 text-black font-bold py-2 px-4 rounded-md transition duration-300"
+        >View Health Tracker</a
+      >
+    </div>
+  </div>
 </div>
 
 <div class="mt-8">
-    <a href="{{ url_for('add_business') }}" class="inline-block bg-orange-600 hover:bg-orange-700 text-black font-bold py-2 px-4 rounded-md transition duration-300">Add Your Business</a>
+  <a
+    href="{{ url_for('add_business') }}"
+    class="inline-block bg-orange-600 hover:bg-orange-700 text-black font-bold py-2 px-4 rounded-md transition duration-300"
+    >Add Your Business</a
+  >
 </div>
 {% endblock %}
-

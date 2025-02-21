@@ -8,6 +8,7 @@
         Add Today's Health Data
       </h2>
       <form method="POST" action="{{ url_for('add_health_data') }}">
+        {{ form.csrf_token }}
         <div class="mb-4">
           <label class="block mb-2 text-sm font-bold text-gray-700" for="steps">
             Steps

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-10">
+  <h1 class="mb-8 text-3xl font-bold text-orange-600">
+    Admin Dashboard
+  </h1>
+  
+  {% if current_user.email == 'root@gmail.com' %}
+  <div class="p-4 mb-8 bg-gray-100 rounded-lg shadow">
+    <h2 class="mb-4 text-xl font-bold text-orange-600">Developer Panel</h2>
+    <div class="space-y-4">
+      {% for provider in providers %}
+      <div class="p-4 bg-white rounded shadow">
+        <div class="flex items-center justify-between">
+          <span class="text-lg font-medium">{{ provider.name }}</span>
+          <button 
+            onclick="verifyProvider('{{ provider.id }}')" 
+            class="px-4 py-2 text-white transition-colors duration-300 bg-green-500 rounded hover:bg-green-600"
+            {% if provider.verified %}disabled{% endif %}
+          >
+            {% if provider.verified %}
+              Verified
+            {% else %}
+              Verify
+            {% endif %}
+          </button>
+        </div>
+        <div class="mt-2 text-gray-600">
+          <p><span class="font-semibold">Specialty:</span> {{ provider.specialty }}</p>
+          <p><span class="font-semibold">Phone:</span> {{ provider.phone }}</p>
+          <p><span class="font-semibold">Address:</span> {{ provider.address }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function verifyProvider(providerId) {
+  console.log(providerId);
+    fetch(`/api/verify-provider/${providerId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})  // send an empty JSON payload
+  })
+  .then(response => {
+    if (response.ok) {
+      location.reload();
+    } else {
+      alert("Verification failed!");
+    }
+  })
+  .catch(error => console.error('Error:', error));
+}
+
+</script>
+{% endblock %}

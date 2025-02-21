@@ -177,9 +177,9 @@ def appointments():
 @app.route('/find_providers')
 @login_required
 def find_providers():
-    # providers = db.collection('providers').where('verified', '==', True).stream()
-    # return render_template('find_providers.html', providers=providers)
-    return render_template('find_providers.html')
+    providers = db.collection('providers').where('verified', '==', True).stream()
+    return render_template('find_providers.html', providers=providers)
+    # return render_template('find_providers.html')
 
 @app.route('/book_appointment', methods=['GET', 'POST'])
 @login_required
@@ -249,25 +249,27 @@ def api_health_data():
 @app.route('/add_business', methods=['GET', 'POST'])
 @login_required
 def add_business():
+    form = FlaskForm()
     if request.method == 'POST':
-        name = request.form.get('name')
-        specialty = request.form.get('specialty')
-        address = request.form.get('address')
-        phone = request.form.get('phone')
-        
-        business_id = str(uuid.uuid4())
-        db.collection('providers').document(business_id).set({
-            'name': name,
-            'specialty': specialty,
-            'address': address,
-            'phone': phone,
-            'owner_id': current_user.id,
-            'verified': False
-        })
-        flash('Business added successfully! It will be visible after verification.')
-        return redirect(url_for('dashboard'))
+        if form.validate_on_submit():
+            name = request.form.get('name')
+            specialty = request.form.get('specialty')
+            address = request.form.get('address')
+            phone = request.form.get('phone')
+            
+            business_id = str(uuid.uuid4())
+            db.collection('providers').document(business_id).set({
+                'name': name,
+                'specialty': specialty,
+                'address': address,
+                'phone': phone,
+                'owner_id': current_user.id,
+                'verified': False
+            })
+            flash('Business added successfully! It will be visible after verification.')
+            return redirect(url_for('dashboard'))
     
-    return render_template('add_business.html')
+    return render_template('add_business.html', form=form)
 
 @app.route('/api/providers')
 @login_required
@@ -279,23 +281,57 @@ def api_providers():
         'specialty': doc.to_dict()['specialty'],
         'distance': 0  # You would calculate this based on user's location
     } for doc in providers]
+    print(provider_list)
     return jsonify(provider_list)
 
 @app.route('/api/provider/<provider_id>')
 @login_required
 def api_provider(provider_id):
-    provider = db.collection('providers').document(provider_id).get()
-    if provider.exists:
-        provider_data = provider.to_dict()
+    doc = db.collection('providers').document(provider_id).get()
+    if doc.exists:
+        provider_data = doc.to_dict()
         return jsonify({
-            'id': provider.id,
-            'name': provider_data['name'],
-            'specialty': provider_data['specialty'],
-            'address': provider_data['address'],
-            'phone': provider_data['phone']
+            'id': doc.id,
+            'name': provider_data.get('name'),
+            'specialty': provider_data.get('specialty'),
+            'address': provider_data.get('address'),
+            'phone': provider_data.get('phone')
         })
-    else:
-        return jsonify({"error": "Provider not found"}), 404
+    return jsonify({'error': 'Provider not found'}), 404
+
+@app.route('/admin')
+@login_required
+def admin():
+    # Retrieve provider documents and convert them to a list of dictionaries,
+    # including each document's id.
+    providers = []
+    for provider_doc in db.collection('providers').stream():
+        provider_data = provider_doc.to_dict()
+        provider_data['id'] = provider_doc.id
+        providers.append(provider_data)
+    return render_template("admin.html", providers=providers)
+
+@app.route('/api/verify-provider/<provider_id>', methods=['POST'])
+@csrf.exempt
+def verify_provider(provider_id):
+    # Add admin check here
+    # user_doc = db.collection('users').document(current_user.id).get()
+    # if not user_doc.exists or not user_doc.to_dict().get('is_admin', False):
+    #     return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    try:
+        provider_ref = db.collection('providers').document(provider_id)
+        provider = provider_ref.get()
+        
+        if provider.exists:
+            provider_ref.update({'verified': True})
+            return jsonify({'success': True, 'message': 'Provider verified successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Provider not found'}), 404
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=False)

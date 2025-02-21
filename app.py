@@ -298,5 +298,4 @@ def api_provider(provider_id):
         return jsonify({"error": "Provider not found"}), 404
 
 if __name__ == '__main__':
-    app.run(debug=False)
-
+    app.run(debug=False, port=5050)

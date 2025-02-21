@@ -28,15 +28,7 @@ COPY . .
 RUN npx tailwindcss init -p
 
 # Create the CSS build script in package.json
-RUN node -e "const pkg=require('./package.json'); pkg.scripts=pkg.scripts||{}; pkg.scripts.build='tailwindcss -i ./static/src/input.css -o ./static/css/output.css'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
-
-# Build Tailwind CSS
-RUN npm run build
-
-# Set environment variables
-ENV FLASK_APP=app.py
-ENV FLASK_ENV=production
-ENV PORT=32771
+ENV PORT=32771 
 
 # Expose the port
 EXPOSE 32771

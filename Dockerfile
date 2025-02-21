@@ -28,7 +28,7 @@ RUN npm run build
 # Set environment variables
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
-ENV PORT=32771
+ENV PORT=32771 
 
 # Expose the port
 EXPOSE 32771

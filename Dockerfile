@@ -25,7 +25,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Initialize Tailwind CSS if config doesn't exist
-RUN npx tailwindcss init -p
+# RUN npx tailwindcss init -p
 
 # Create the CSS build script in package.json
 ENV PORT=32771 

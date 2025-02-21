@@ -4,7 +4,7 @@
 <h1 class="text-3xl font-bold text-orange-600 mb-8">Welcome, {{ current_user.name }}!</h1>
 
 <div class="grid md:grid-cols-2 gap-8">
-    <div class="bg-white shadow-lg rounded-lg border border-orange-200">
+    <div class="bg-black shadow-lg rounded-lg border border-orange-200">
         <div class="p-4 border-b border-orange-200">
             <h2 class="text-lg font-semibold text-orange-700 flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,11 +26,11 @@
             {% else %}
                 <p class="text-gray-600">No upcoming appointments.</p>
             {% endif %}
-            <a href="{{ url_for('book_appointment') }}" class="mt-4 inline-block bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">Book New Appointment</a>
+            <a href="{{ url_for('book_appointment') }}" class="mt-4 inline-block bg-orange-600 hover:bg-orange-700 text-black font-bold py-2 px-4 rounded-md transition duration-300">Book New Appointment</a>
         </div>
     </div>
 
-    <div class="bg-white shadow-lg rounded-lg border border-orange-200">
+    <div class="bg-black shadow-lg rounded-lg border border-orange-200">
         <div class="p-4 border-b border-orange-200">
             <h2 class="text-lg font-semibold text-orange-700 flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,13 +58,13 @@
             {% else %}
                 <p class="text-gray-600">No health data available.</p>
             {% endif %}
-            <a href="{{ url_for('health_tracker') }}" class="mt-4 inline-block bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">View Health Tracker</a>
+            <a href="{{ url_for('health_tracker') }}" class="mt-4 inline-block bg-orange-600 hover:bg-orange-700 text-black font-bold py-2 px-4 rounded-md transition duration-300">View Health Tracker</a>
         </div>
     </div>
 </div>
 
 <div class="mt-8">
-    <a href="{{ url_for('add_business') }}" class="inline-block bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">Add Your Business</a>
+    <a href="{{ url_for('add_business') }}" class="inline-block bg-orange-600 hover:bg-orange-700 text-black font-bold py-2 px-4 rounded-md transition duration-300">Add Your Business</a>
 </div>
 {% endblock %}
 

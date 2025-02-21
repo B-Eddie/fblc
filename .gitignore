@@ -1,38 +1,27 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Python files
+__pycache__/
+*.py[cod]
+*$py.class
 
-# dependencies
-node_modules/
-
-# Expo
-.expo/
+# Distribution/packaging
 dist/
-web-build/
-expo-env.d.ts
+build/
+*.egg-info/
 
-# Native
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+# Virtual environment
+venv/
+env/
+ENV/
 
-# Metro
-.metro-health-check*
+# IDE
+.vscode/
+.idea/
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
+# Firebase
+firebase-debug.log
+firebase-service-account.json
 
-# macOS
+# Local files
 .DS_Store
-*.pem
-
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-app-example
+*.log
+firebaseconfig.json

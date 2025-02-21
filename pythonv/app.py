@@ -11,7 +11,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key')
 
 # Initialize Firebase
-cred = credentials.Certificate("path/to/your/serviceAccountKey.json")
+cred = credentials.Certificate("fblc/pythonv/firebaseconfig.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 

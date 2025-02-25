@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 
 # Distribution/packaging
-dist/
+# dist/
 build/
 *.egg-info/
 
@@ -25,3 +25,6 @@ firebase-service-account.json
 .DS_Store
 *.log
 firebaseconfig.json
+node_modules
+.env
+fblc/.next

@@ -1,158 +1,367 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block content %}
+<div class="p-10">
+  <h1 class="mb-8 text-3xl font-bold text-orange-600">
+    Find Healthcare Providers
+  </h1>
 
-{% block content %}
-<h1 class="text-3xl font-bold text-orange-600 mb-8">Find Healthcare Providers</h1>
-
-<div class="mb-8">
+  <div class="mb-8">
     <div class="flex flex-wrap gap-4 mb-4">
-        <button id="filterAll" class="bg-orange-500 hover:bg-orange-600 text-black font-bold py-2 px-4 rounded-full transition duration-300">All</button>
-        <button id="filterDentist" class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-4 rounded-full transition duration-300">Dentist</button>
-        <button id="filterOptometrist" class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-4 rounded-full transition duration-300">Optometrist</button>
-        <button id="filterGP" class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-4 rounded-full transition duration-300">General Practitioner</button>
-        <button id="filterPediatrician" class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-4 rounded-full transition duration-300">Pediatrician</button>
-        <button id="filterDermatologist" class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-4 rounded-full transition duration-300">Dermatologist</button>
+      <button
+        id="filterAll"
+        class="px-4 py-2 font-bold text-black transition duration-300 bg-orange-500 rounded-full hover:bg-orange-600"
+      >
+        All
+      </button>
+      <button
+        id="filterDentist"
+        class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
+      >
+        Dentist
+      </button>
+      <button
+        id="filterOptometrist"
+        class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
+      >
+        Optometrist
+      </button>
+      <button
+        id="filterGP"
+        class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
+      >
+        General Practitioner
+      </button>
+      <button
+        id="filterPediatrician"
+        class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
+      >
+        Pediatrician
+      </button>
+      <button
+        id="filterDermatologist"
+        class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
+      >
+        Dermatologist
+      </button>
     </div>
     <div class="flex items-center gap-4">
-        <label for="sortDistance" class="font-medium text-orange-800">Sort by distance:</label>
-        <select id="sortDistance" class="border border-orange-300 rounded-md p-2 bg-orange-50 text-orange-800">
-            <option value="asc">Nearest first</option>
-            <option value="desc">Farthest first</option>
-        </select>
+      <label for="sortDistance" class="font-medium text-orange-800"
+        >Sort by distance:</label
+      >
+      <select
+        id="sortDistance"
+        class="p-2 text-orange-800 border border-orange-300 rounded-md bg-orange-50"
+      >
+        <option value="asc">Nearest first</option>
+        <option value="desc">Farthest first</option>
+      </select>
     </div>
-</div>
+  </div>
 
-<div id="providerList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div id="providerList" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
     <!-- Provider cards will be dynamically inserted here -->
-</div>
+  </div>
 
-<!-- Modal for booking appointments -->
-<div id="bookingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
-    <div class="bg-black p-8 rounded-lg shadow-xl max-w-md w-full">
-        <h2 id="modalTitle" class="text-2xl font-bold text-orange-600 mb-4"></h2>
-        <img id="modalImage" src="/placeholder.svg" alt="Provider" class="w-full h-48 object-cover rounded-lg mb-4">
-        <p id="modalSpecialty" class="text-gray-600 mb-2"></p>
-        <p id="modalAddress" class="text-gray-600 mb-2"></p>
-        <p id="modalPhone" class="text-gray-600 mb-4"></p>
-        <form id="bookingForm" class="space-y-4">
-            <div>
-                <label for="appointmentDate" class="block text-sm font-medium text-gray-700">Date</label>
-                <input type="date" id="appointmentDate" name="appointmentDate" required class="mt-1 block w-full border border-orange-300 rounded-md shadow-sm p-2">
-            </div>
-            <div>
-                <label for="appointmentTime" class="block text-sm font-medium text-gray-700">Time</label>
-                <input type="time" id="appointmentTime" name="appointmentTime" required class="mt-1 block w-full border border-orange-300 rounded-md shadow-sm p-2">
-            </div>
-            <div>
-                <label for="appointmentType" class="block text-sm font-medium text-gray-700">Appointment Type</label>
-                <input type="text" id="appointmentType" name="appointmentType" required class="mt-1 block w-full border border-orange-300 rounded-md shadow-sm p-2">
-            </div>
-            <div class="flex justify-end space-x-4">
-                <button type="button" id="closeModal" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300">Cancel</button>
-                <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-black font-bold py-2 px-4 rounded-full transition duration-300">Book Appointment</button>
-            </div>
-        </form>
+  <!-- Modal for booking appointments -->
+  <div
+    id="bookingModal"
+    class="fixed inset-0 items-center justify-center hidden bg-gray-600 bg-opacity-50"
+  >
+    <div class="w-full max-w-md p-8 bg-orange-200 rounded-lg shadow-xl">
+      <h2 id="modalTitle" class="mb-4 text-2xl font-bold text-orange-600"></h2>
+      <div
+        id="modalMap"
+        class="w-full h-48 mb-4 rounded-lg"
+        style="min-height: 200px"
+      ></div>
+      <p id="modalSpecialty" class="mb-2 text-gray-600"></p>
+      <p id="modalAddress" class="mb-2 text-gray-600"></p>
+      <p id="modalPhone" class="mb-4 text-gray-600"></p>
+      <form id="bookingForm" class="space-y-4">
+        <div>
+          <label
+            for="appointmentDate"
+            class="block text-sm font-medium text-gray-700"
+            >Date</label
+          >
+          <input
+            type="date"
+            id="appointmentDate"
+            name="appointmentDate"
+            required
+            class="block w-full p-2 mt-1 border border-orange-300 rounded-md shadow-sm"
+          />
+        </div>
+        <div>
+          <label
+            for="appointmentTime"
+            class="block text-sm font-medium text-gray-700"
+            >Time</label
+          >
+          <input
+            type="time"
+            id="appointmentTime"
+            name="appointmentTime"
+            required
+            class="block w-full p-2 mt-1 border border-orange-300 rounded-md shadow-sm"
+          />
+        </div>
+        <div>
+          <label
+            for="appointmentType"
+            class="block text-sm font-medium text-gray-700"
+            >Appointment Type</label
+          >
+          <input
+            type="text"
+            id="appointmentType"
+            name="appointmentType"
+            required
+            class="block w-full p-2 mt-1 border border-orange-300 rounded-md shadow-sm"
+          />
+        </div>
+        <div class="flex justify-end space-x-4">
+          <button
+            type="button"
+            id="closeModal"
+            class="px-4 py-2 font-bold text-gray-800 transition duration-300 bg-gray-300 rounded-full hover:bg-gray-400"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 font-bold text-black transition duration-300 bg-orange-500 rounded-full hover:bg-orange-600"
+          >
+            Book Appointment
+          </button>
+        </div>
+      </form>
     </div>
-</div>
+  </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const providerList = document.getElementById('providerList');
-    const filterButtons = document.querySelectorAll('[id^="filter"]');
-    const sortDistance = document.getElementById('sortDistance');
-    const modal = document.getElementById('bookingModal');
-    const closeModal = document.getElementById('closeModal');
-    const bookingForm = document.getElementById('bookingForm');
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const providerList = document.getElementById("providerList");
+      const filterButtons = document.querySelectorAll('[id^="filter"]');
+      const sortDistance = document.getElementById("sortDistance");
+      const modal = document.getElementById("bookingModal");
+      const closeModal = document.getElementById("closeModal");
+      const bookingForm = document.getElementById("bookingForm");
 
-    let providers = [];
+      let providers = [];
 
-    // Fetch providers
-    fetch('/api/providers')
-        .then(response => response.json())
-        .then(data => {
-            providers = data;
-            renderProviders(providers);
+      // Fetch providers
+      fetch("/api/providers")
+        .then((response) => response.json())
+        .then((data) => {
+          providers = data;
+          renderProviders(providers);
         });
 
-    // Filter providers
-    filterButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            filterButtons.forEach(btn => btn.classList.remove('bg-orange-500', 'text-black'));
-            filterButtons.forEach(btn => btn.classList.add('bg-orange-100', 'text-orange-800'));
-            button.classList.remove('bg-orange-100', 'text-orange-800');
-            button.classList.add('bg-orange-500', 'text-black');
-            const specialty = button.id.replace('filter', '');
-            const filteredProviders = specialty === 'All' 
-                ? providers 
-                : providers.filter(provider => provider.specialty === specialty);
-            renderProviders(filteredProviders);
+      // Filter providers
+      filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          filterButtons.forEach((btn) =>
+            btn.classList.remove("bg-orange-500", "text-black")
+          );
+          filterButtons.forEach((btn) =>
+            btn.classList.add("bg-orange-100", "text-orange-800")
+          );
+          button.classList.remove("bg-orange-100", "text-orange-800");
+          button.classList.add("bg-orange-500", "text-black");
+          const specialty = button.id.replace("filter", "");
+          const filteredProviders =
+            specialty === "All"
+              ? providers
+              : providers.filter(
+                  (provider) => provider.specialty === specialty
+                );
+          renderProviders(filteredProviders);
         });
-    });
+      });
 
-    // Sort providers by distance
-    sortDistance.addEventListener('change', () => {
+      // Sort providers by distance
+      sortDistance.addEventListener("change", () => {
         const sortedProviders = [...providers].sort((a, b) => {
-            return sortDistance.value === 'asc' ? a.distance - b.distance : b.distance - a.distance;
+          return sortDistance.value === "asc"
+            ? a.distance - b.distance
+            : b.distance - a.distance;
         });
         renderProviders(sortedProviders);
-    });
+      });
 
-    // Render provider cards
-    function renderProviders(providersToRender) {
-        providerList.innerHTML = '';
-        providersToRender.forEach(provider => {
-            const card = document.createElement('div');
-            card.className = 'bg-black shadow-lg rounded-lg border border-orange-200 overflow-hidden transition duration-300 transform hover:scale-105';
-            card.innerHTML = `
-                <img src="https://source.unsplash.com/300x200/?doctor" alt="${provider.name}" class="w-full h-48 object-cover">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-orange-600 mb-2">${provider.name}</h3>
-                    <p class="text-gray-600 mb-2">${provider.specialty}</p>
-                    <p class="text-gray-600 mb-4">${provider.distance} miles away</p>
-                    <button class="bg-orange-500 hover:bg-orange-600 text-black font-bold py-2 px-4 rounded-full transition duration-300 book-appointment" data-id="${provider.id}">Book Appointment</button>
-                </div>
-            `;
-            providerList.appendChild(card);
+      // Render provider cards
+      function renderProviders(providersToRender) {
+        providerList.innerHTML = "";
+        providersToRender.forEach((provider) => {
+          const card = document.createElement("div");
+          card.className =
+            "bg-accent shadow-lg rounded-lg border border-orange-200 overflow-hidden transition duration-300 transform hover:scale-105";
+
+          // Create a unique ID for each provider's map
+          const mapDivId = `map-${provider.id}`;
+
+          card.innerHTML = `
+            <div id="${mapDivId}" class="w-full h-48"></div>
+            <div class="p-6">
+              <h3 class="mb-2 text-lg font-semibold text-orange-600">${provider.name}</h3>
+              <p class="mb-2 text-gray-600">${provider.specialty}</p>
+              <p class="mb-4 text-gray-600">${provider.distance} miles away</p>
+              <button class="px-4 py-2 font-bold text-black transition duration-300 bg-orange-500 rounded-full hover:bg-orange-600 book-appointment" data-id="${provider.id}">Book Appointment</button>
+            </div>
+          `;
+          providerList.appendChild(card);
+
+          // Initialize map for this provider
+          initializeProviderMap(mapDivId, provider.address);
         });
 
         // Add event listeners to book appointment buttons
-        document.querySelectorAll('.book-appointment').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const providerId = e.target.getAttribute('data-id');
-                openBookingModal(providerId);
-            });
+        document.querySelectorAll(".book-appointment").forEach((button) => {
+          button.addEventListener("click", (e) => {
+            const providerId = e.target.getAttribute("data-id");
+            openBookingModal(providerId);
+          });
         });
-    }
+      }
 
-    // Open booking modal
-    function openBookingModal(providerId) {
+      // Add this new function to initialize maps
+      function initializeProviderMap(mapDivId, address) {
+        const defaultLayers = platform.createDefaultLayers();
+        const providerMap = new H.Map(
+          document.getElementById(mapDivId),
+          defaultLayers.vector.normal.map,
+          {
+            zoom: 15,
+            pixelRatio: window.devicePixelRatio || 1,
+          }
+        );
+
+        // Enable map interactions (optional for card views)
+        const behavior = new H.mapevents.Behavior(
+          new H.mapevents.MapEvents(providerMap)
+        );
+
+        // Geocode the address and center the map
+        const geocoder = platform.getSearchService();
+        geocoder.geocode(
+          {
+            q: address,
+          },
+          (result) => {
+            if (result.items.length > 0) {
+              const coords = result.items[0].position;
+              providerMap.setCenter({ lat: coords.lat, lng: coords.lng });
+
+              // Add a marker
+              const marker = new H.map.Marker({
+                lat: coords.lat,
+                lng: coords.lng,
+              });
+              providerMap.addObject(marker);
+            }
+          },
+          (error) => {
+            console.error("Geocoding error:", error);
+          }
+        );
+
+        // Make map responsive
+        window.addEventListener("resize", () =>
+          providerMap.getViewPort().resize()
+        );
+      }
+
+      // Initialize HERE Map
+      const platform = new H.service.Platform({
+        apikey: "lUFTE1skWuIcrj_s0wCZbbM2KWcgT2JnJcKGWHFi4WA", // Replace with your HERE API key
+      });
+
+      let map = null;
+
+      // Update openBookingModal function
+      function openBookingModal(providerId) {
         fetch(`/api/provider/${providerId}`)
-            .then(response => response.json())
-            .then(provider => {
-                document.getElementById('modalTitle').textContent = provider.name;
-                document.getElementById('modalImage').src = `https://source.unsplash.com/400x300/?doctor`;
-                document.getElementById('modalSpecialty').textContent = provider.specialty;
-                document.getElementById('modalAddress').textContent = provider.address;
-                document.getElementById('modalPhone').textContent = provider.phone;
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            });
-    }
+          .then((response) => response.json())
+          .then((provider) => {
+            document.getElementById("modalTitle").textContent = provider.name;
+            document.getElementById("modalSpecialty").textContent =
+              provider.specialty;
+            document.getElementById("modalAddress").textContent =
+              provider.address;
+            document.getElementById("modalPhone").textContent = provider.phone;
 
-    // Close modal
-    closeModal.addEventListener('click', () => {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-    });
+            // Initialize map if not already done
+            if (!map) {
+              const defaultLayers = platform.createDefaultLayers();
+              map = new H.Map(
+                document.getElementById("modalMap"),
+                defaultLayers.vector.normal.map,
+                {
+                  zoom: 15,
+                  pixelRatio: window.devicePixelRatio || 1,
+                }
+              );
 
-    // Handle booking form submission
-    bookingForm.addEventListener('submit', (e) => {
+              // Enable map interactions
+              const behavior = new H.mapevents.Behavior(
+                new H.mapevents.MapEvents(map)
+              );
+              const ui = H.ui.UI.createDefault(map, defaultLayers);
+
+              // Make map responsive
+              window.addEventListener("resize", () =>
+                map.getViewPort().resize()
+              );
+            }
+
+            // Geocode the address and center the map
+            const geocoder = platform.getSearchService();
+            geocoder.geocode(
+              {
+                q: provider.address,
+              },
+              (result) => {
+                if (result.items.length > 0) {
+                  const coords = result.items[0].position;
+                  map.setCenter({ lat: coords.lat, lng: coords.lng });
+
+                  // Add a marker
+                  const marker = new H.map.Marker({
+                    lat: coords.lat,
+                    lng: coords.lng,
+                  });
+                  map.removeObjects(map.getObjects()); // Clear existing markers
+                  map.addObject(marker);
+                }
+              },
+              alert
+            );
+
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+          });
+      }
+
+      // Close modal
+      // document.getElementById("bookingModal").addEventListener("click", () => {
+      //   modal.classList.add("hidden");
+      //   modal.classList.remove("flex");
+      // });
+
+      closeModal.addEventListener("click", () => {
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      });
+
+      // Handle booking form submission
+      bookingForm.addEventListener("submit", (e) => {
         e.preventDefault();
         // Here you would typically send the booking data to your server
-        alert('Appointment booked successfully!');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        alert("Appointment booked successfully!");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      });
     });
-});
-</script>
+  </script>
+</div>
 {% endblock %}
-

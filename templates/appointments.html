@@ -1,37 +1,61 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block content %}
+<div class="p-10">
+<h1 class="mb-8 text-3xl font-bold text-orange-600">Your Appointments</h1>
 
-{% block content %}
-<h1 class="text-3xl font-bold text-orange-600 mb-8">Your Appointments</h1>
-
-<div class="bg-black shadow-lg rounded-lg border border-orange-200 overflow-hidden">
-    <table class="min-w-full divide-y divide-orange-200">
-        <thead class="bg-orange-50">
-            <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-orange-500 uppercase tracking-wider">Doctor</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-orange-500 uppercase tracking-wider">Type</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-orange-500 uppercase tracking-wider">Date & Time</th>
-            </tr>
-        </thead>
-        <tbody class="bg-black divide-y divide-orange-200">
-            {% for appointment in appointments %}
-            <tr>
-                <td class="px-6 py-4 blackspace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">{{ appointment.doctor_name }}</div>
-                </td>
-                <td class="px-6 py-4 blackspace-nowrap">
-                    <div class="text-sm text-gray-500">{{ appointment.type }}</div>
-                </td>
-                <td class="px-6 py-4 blackspace-nowrap">
-                    <div class="text-sm text-gray-500">{{ appointment.date.strftime('%Y-%m-%d %H:%M') }}</div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div
+  class="overflow-hidden border border-orange-200 rounded-lg shadow-lg bg-accent"
+>
+  <table class="min-w-full divide-y divide-orange-200">
+    <thead class="bg-orange-50">
+      <tr>
+        <th
+          scope="col"
+          class="px-6 py-3 text-xs font-medium tracking-wider text-left text-orange-500 uppercase"
+        >
+          Doctor
+        </th>
+        <th
+          scope="col"
+          class="px-6 py-3 text-xs font-medium tracking-wider text-left text-orange-500 uppercase"
+        >
+          Type
+        </th>
+        <th
+          scope="col"
+          class="px-6 py-3 text-xs font-medium tracking-wider text-left text-orange-500 uppercase"
+        >
+          Date & Time
+        </th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-orange-200 bg-accent">
+      {% for appointment in appointments %}
+      <tr>
+        <td class="px-6 py-4 blackspace-nowrap">
+          <div class="text-sm font-medium text-gray-900">
+            {{ appointment.doctor_name }}
+          </div>
+        </td>
+        <td class="px-6 py-4 blackspace-nowrap">
+          <div class="text-sm text-gray-500">{{ appointment.type }}</div>
+        </td>
+        <td class="px-6 py-4 blackspace-nowrap">
+          <div class="text-sm text-gray-500">
+            {{ appointment.date.strftime('%Y-%m-%d %H:%M') }}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 
 <div class="mt-8">
-    <a href="{{ url_for('book_appointment') }}" class="inline-block bg-orange-600 hover:bg-orange-700 text-black font-bold py-2 px-4 rounded-md transition duration-300">Book New Appointment</a>
+  <a
+    href="{{ url_for('book_appointment') }}"
+    class="inline-block px-4 py-2 font-bold text-black transition duration-300 bg-orange-600 rounded-md hover:bg-orange-700"
+    >Book New Appointment</a
+  >
+</div>
 </div>
 {% endblock %}
-

@@ -13,7 +13,7 @@ body {
 }
 
 .card {
-  @apply bg-black shadow-lg rounded-lg border border-orange-200 overflow-hidden transition duration-300 transform hover:scale-105;
+  @apply bg-accent shadow-lg rounded-lg border border-orange-200 overflow-hidden transition duration-300 transform hover:scale-105;
 }
 
 .input {
@@ -77,4 +77,3 @@ body {
     @apply bg-gray-700 hover:bg-gray-600 text-orange-300;
   }
 }
-

@@ -1,57 +1,449 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HealthHub Connect</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"> -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='./css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='./dist/css/output.css') }}"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+      defer
+    ></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="bg-orange-50 min-h-screen flex flex-col">
-    <nav class="bg-orange-600 shadow-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex justify-between items-center">
-                <a href="{{ url_for('index') }}" class="text-2xl font-bold text-black">
-                    HealthHub Connect
-                </a>
-                <div class="flex space-x-4">
-                    {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('dashboard') }}" class="text-black hover:text-orange-200">Dashboard</a>
-                        <a href="{{ url_for('find_providers') }}" class="text-black hover:text-orange-200">Find Providers</a>
-                        <a href="{{ url_for('appointments') }}" class="text-black hover:text-orange-200">Appointments</a>
-                        <a href="{{ url_for('health_tracker') }}" class="text-black hover:text-orange-200">Health Tracker</a>
-                        <a href="{{ url_for('logout') }}" class="text-black hover:text-orange-200">Logout</a>
-                    {% else %}
-                        <a href="{{ url_for('login') }}" class="text-black hover:text-orange-200">Login</a>
-                        <a href="{{ url_for('register') }}" class="text-black hover:text-orange-200">Register</a>
-                    {% endif %}
-                </div>
-            </div>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-places.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-clustering.js"></script>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://js.api.here.com/v3/3.1/mapsjs-ui.css"
+    />
+    <script>
+      window.initHereMaps = function () {
+        // Initialize the platform object
+        const platform = new H.service.Platform({
+          apikey: "{{ here_api_key }}",
+        });
+
+        // Initialize the default search parameters
+        window.searchOptions = {
+          at: "37.7749,-122.4194", // Default to San Francisco coordinates
+        };
+
+        // Get user's location if available
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            function (position) {
+              window.searchOptions.at = `${position.coords.latitude},${position.coords.longitude}`;
+            },
+            function (error) {
+              console.warn("Geolocation failed:", error);
+            }
+          );
+        }
+
+        // Make platform globally available
+        window.herePlatform = platform;
+      };
+    </script>
+  </head>
+  <body onload="initHereMaps()" class="flex flex-col min-h-screen bg-orange-50">
+    <nav class="bg-orange-600 shadow-md" x-data="{ open: false }">
+      <div class="px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between">
+          <a
+            href="{{ url_for('index') }}"
+            class="text-2xl font-bold text-black"
+          >
+            HealthHub Connect
+          </a>
+          <!-- Desktop Menu -->
+          <div class="hidden space-x-6 md:flex">
+            {% if current_user.is_authenticated %}
+            <a
+              href="{{ url_for('dashboard') }}"
+              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
+            >
+              <!-- Dashboard Icon -->
+              <svg
+                class="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"
+                ></path>
+              </svg>
+              Dashboard
+            </a>
+            <a
+              href="{{ url_for('find_providers') }}"
+              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
+            >
+              <!-- Search/Find Icon -->
+              <svg
+                class="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M21 21l-4.35-4.35M8.5 14.5a5.5 5.5 0 1111 0 5.5 5.5 0 01-11 0z"
+                ></path>
+              </svg>
+              Find Providers
+            </a>
+            <a
+              href="{{ url_for('appointments') }}"
+              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
+            >
+              <!-- Appointments Icon -->
+              <svg
+                class="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M8 7V3m8 4V3m-9 8h10m-10 4h10m-8 4h6"
+                ></path>
+              </svg>
+              Appointments
+            </a>
+            <a
+              href="{{ url_for('health_tracker') }}"
+              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
+            >
+              <!-- Health Tracker Icon -->
+              <svg
+                class="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M9 19V6h3.5l1.5-2h5l1.5 2H21v13"
+                ></path>
+              </svg>
+              Health Tracker
+            </a>
+            <a
+              href="{{ url_for('logout') }}"
+              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
+            >
+              <!-- Logout Icon -->
+              <svg
+                class="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7"
+                ></path>
+              </svg>
+              Logout
+            </a>
+            {% else %}
+            <a
+              href="{{ url_for('login') }}"
+              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
+            >
+              <!-- Login Icon -->
+              <svg
+                class="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M15 12H3m0 0l4-4m-4 4l4 4"
+                ></path>
+              </svg>
+              Login
+            </a>
+            <a
+              href="{{ url_for('register') }}"
+              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
+            >
+              <!-- Register Icon -->
+              <svg
+                class="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 4v16m8-8H4"
+                ></path>
+              </svg>
+              Register
+            </a>
+            {% endif %}
+          </div>
+          <!-- Mobile Menu Button -->
+          <div class="md:hidden">
+            <button @click="open = !open" class="text-white focus:outline-none">
+              <template x-if="!open">
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  ></path>
+                </svg>
+              </template>
+              <template x-if="open">
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  ></path>
+                </svg>
+              </template>
+            </button>
+          </div>
         </div>
+      </div>
+      <!-- Mobile Menu -->
+      <div
+        x-show="open"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 transform -translate-y-2"
+        x-transition:enter-end="opacity-100 transform translate-y-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 transform translate-y-0"
+        x-transition:leave-end="opacity-0 transform -translate-y-2"
+        class="bg-orange-600 md:hidden"
+      >
+        <div class="px-4 pt-2 pb-4 space-y-2">
+          {% if current_user.is_authenticated %}
+          <a
+            href="{{ url_for('dashboard') }}"
+            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
+          >
+            <!-- Dashboard Icon -->
+            <svg
+              class="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"
+              ></path>
+            </svg>
+            Dashboard
+          </a>
+          <a
+            href="{{ url_for('find_providers') }}"
+            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
+          >
+            <!-- Find Providers Icon -->
+            <svg
+              class="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M21 21l-4.35-4.35M8.5 14.5a5.5 5.5 0 1111 0 5.5 5.5 0 01-11 0z"
+              ></path>
+            </svg>
+            Find Providers
+          </a>
+          <a
+            href="{{ url_for('appointments') }}"
+            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
+          >
+            <!-- Appointments Icon -->
+            <svg
+              class="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M8 7V3m8 4V3m-9 8h10m-10 4h10m-8 4h6"
+              ></path>
+            </svg>
+            Appointments
+          </a>
+          <a
+            href="{{ url_for('health_tracker') }}"
+            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
+          >
+            <!-- Health Tracker Icon -->
+            <svg
+              class="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 19V6h3.5l1.5-2h5l1.5 2H21v13"
+              ></path>
+            </svg>
+            Health Tracker
+          </a>
+          <a
+            href="{{ url_for('logout') }}"
+            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
+          >
+            <!-- Logout Icon -->
+            <svg
+              class="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M17 16l4-4m0 0l-4-4m4 4H7"
+              ></path>
+            </svg>
+            Logout
+          </a>
+          {% else %}
+          <a
+            href="{{ url_for('login') }}"
+            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
+          >
+            <!-- Login Icon -->
+            <svg
+              class="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15 12H3m0 0l4-4m-4 4l4 4"
+              ></path>
+            </svg>
+            Login
+          </a>
+          <a
+            href="{{ url_for('register') }}"
+            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
+          >
+            <!-- Register Icon -->
+            <svg
+              class="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 4v16m8-8H4"
+              ></path>
+            </svg>
+            Register
+          </a>
+          {% endif %}
+        </div>
+      </div>
     </nav>
 
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="bg-orange-100 border border-orange-400 text-orange-700 px-4 py-3 rounded relative mb-4" role="alert">
-                        <span class="block sm:inline">{{ message }}</span>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        {% block content %}{% endblock %}
+    <main class="flex-grow">
+      {% with messages = get_flashed_messages() %} {% if messages %} {% for
+      message in messages %}
+      <div
+        class="relative px-4 py-3 mb-4 text-orange-700 bg-orange-100 border border-orange-400 rounded"
+        role="alert"
+      >
+        <span class="block sm:inline">{{ message }}</span>
+      </div>
+      {% endfor %} {% endif %} {% endwith %} {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-orange-600 text-black">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center">
-            © 2024 HealthHub Connect. All rights reserved.
-        </div>
+    <footer class="text-black bg-orange-600">
+      <div class="px-4 py-4 mx-auto text-center max-w-7xl sm:px-6 lg:px-8">
+        © 2025 HealthHub Connect. All rights reserved.
+      </div>
     </footer>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-</body>
+  </body>
 </html>
-

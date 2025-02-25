@@ -1,90 +1,137 @@
 <head>
-    <!-- Other meta and link tags -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <style>
-        /* Smooth scrolling */
-        html {
-            scroll-behavior: smooth;
-        }
-        
-        /* Parallax scrolling */
-        .parallax {
-            background-attachment: fixed;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: cover;
-            height: 400px;
-        }
+  <!-- Other meta and link tags -->
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    rel="stylesheet"
+  />
+  <style>
+    /* Smooth scrolling */
+    html {
+      scroll-behavior: smooth;
+    }
 
-        /* Color stripes */
-        .stripe {
-            height: 100px;
-        }
-    </style>
+    /* Parallax scrolling */
+    .parallax {
+      background-attachment: fixed;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      height: 400px;
+    }
+
+    /* Color stripes */
+    .stripe {
+      height: 100px;
+    }
+  </style>
 </head>
 
-{% extends "base.html" %}
-
-{% block content %}
-<div class="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center bg-gradient-to-r from-orange-200 to-orange-500 p-8 rounded-lg shadow-xl">
-    <h1 class="text-4xl md:text-6xl font-extrabold text-orange-700 mb-6 leading-tight">
-        Welcome to HealthHub Connect
-    </h1>
-    <p class="text-xl text-orange-900 mb-8 max-w-2xl mx-auto">
-        Empowering you to take control of your healthcare journey with easy access to services, appointments, and personalized health tracking.
-    </p>
-    <div class="flex flex-col md:flex-row gap-6">
-        <a href="{{ url_for('register') }}" class="inline-flex items-center px-8 py-4 bg-orange-700 hover:bg-orange-900 text-black font-semibold rounded-md shadow-md hover:shadow-lg transition duration-300">
-            Get Started
-            <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-            </svg>
-        </a>
-        <a href="#features" class="inline-flex items-center px-8 py-4 border-2 border-orange-700 text-orange-700 hover:bg-orange-300 font-semibold rounded-md shadow-md hover:shadow-lg transition duration-300">
-            Learn More
-        </a>
-    </div>
+{% extends "base.html" %} {% block content %}
+<div
+  class="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center bg-gradient-to-r from-orange-200 to-orange-500 p-8 rounded-lg shadow-xl"
+>
+  <h1
+    class="mb-6 text-4xl font-extrabold leading-tight text-orange-700 md:text-6xl"
+  >
+    Welcome to HealthHub Connect
+  </h1>
+  <p class="max-w-2xl mx-auto mb-8 text-xl text-orange-900">
+    Empowering you to take control of your healthcare journey with easy access
+    to services, appointments, and personalized health tracking.
+  </p>
+  <div class="flex flex-col gap-6 md:flex-row">
+    <a
+      href="{{ url_for('register') }}"
+      class="inline-flex items-center px-8 py-4 font-semibold text-black transition duration-300 bg-orange-700 rounded-md shadow-md hover:bg-orange-900 hover:shadow-lg"
+    >
+      Get Started
+      <svg
+        class="w-5 h-5 ml-2"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 5l7 7-7 7"
+        />
+      </svg>
+    </a>
+    <a
+      href="#features"
+      class="inline-flex items-center px-8 py-4 font-semibold text-orange-700 transition duration-300 border-2 border-orange-700 rounded-md shadow-md hover:bg-orange-300 hover:shadow-lg"
+    >
+      Learn More
+    </a>
+  </div>
 </div>
 
 <!-- Color Stripe -->
-<div class="stripe bg-orange-600"></div>
+<div class="bg-orange-600 stripe"></div>
 
-<div id="features" class="mt-16 max-w-7xl mx-auto px-6">
-    <h2 class="text-3xl font-bold text-orange-700 mb-12 text-center">Our Features</h2>
-    <div class="grid md:grid-cols-3 gap-8">
-        <!-- Feature 1: Easy Appointment Booking -->
-        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300 border-l-4 border-orange-600">
-            <div class="flex justify-center mb-4">
-                <i class="fas fa-calendar-check text-4xl text-orange-600"></i>
-            </div>
-            <h3 class="text-xl font-semibold text-orange-700 mb-4">Easy Appointment Booking</h3>
-            <p class="text-gray-600">Schedule appointments with your healthcare providers quickly and easily.</p>
-        </div>
-
-        <!-- Feature 2: Health Tracking -->
-        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300 border-l-4 border-orange-600">
-            <div class="flex justify-center mb-4">
-                <i class="fas fa-heartbeat text-4xl text-orange-600"></i>
-            </div>
-            <h3 class="text-xl font-semibold text-orange-700 mb-4">Health Tracking</h3>
-            <p class="text-gray-600">Monitor your daily health metrics and visualize your progress over time.</p>
-        </div>
-
-        <!-- Feature 3: Personalized Dashboard -->
-        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300 border-l-4 border-orange-600">
-            <div class="flex justify-center mb-4">
-                <i class="fas fa-tachometer-alt text-4xl text-orange-600"></i>
-            </div>
-            <h3 class="text-xl font-semibold text-orange-700 mb-4">Personalized Dashboard</h3>
-            <p class="text-gray-600">Get a quick overview of your upcoming appointments and health status.</p>
-        </div>
+<div id="features" class="px-6 mx-auto mt-16 max-w-7xl">
+  <h2 class="mb-12 text-3xl font-bold text-center text-orange-700">
+    Our Features
+  </h2>
+  <div class="grid gap-8 md:grid-cols-3">
+    <!-- Feature 1: Easy Appointment Booking -->
+    <div
+      class="p-6 transition duration-300 bg-white border-l-4 border-orange-600 rounded-lg shadow-md hover:shadow-xl"
+    >
+      <div class="flex justify-center mb-4">
+        <i class="text-4xl text-orange-600 fas fa-calendar-check"></i>
+      </div>
+      <h3 class="mb-4 text-xl font-semibold text-orange-700">
+        Easy Appointment Booking
+      </h3>
+      <p class="text-gray-600">
+        Schedule appointments with your healthcare providers quickly and easily.
+      </p>
     </div>
+
+    <!-- Feature 2: Health Tracking -->
+    <div
+      class="p-6 transition duration-300 bg-white border-l-4 border-orange-600 rounded-lg shadow-md hover:shadow-xl"
+    >
+      <div class="flex justify-center mb-4">
+        <i class="text-4xl text-orange-600 fas fa-heartbeat"></i>
+      </div>
+      <h3 class="mb-4 text-xl font-semibold text-orange-700">
+        Health Tracking
+      </h3>
+      <p class="text-gray-600">
+        Monitor your daily health metrics and visualize your progress over time.
+      </p>
+    </div>
+
+    <!-- Feature 3: Personalized Dashboard -->
+    <div
+      class="p-6 transition duration-300 bg-white border-l-4 border-orange-600 rounded-lg shadow-md hover:shadow-xl"
+    >
+      <div class="flex justify-center mb-4">
+        <i class="text-4xl text-orange-600 fas fa-tachometer-alt"></i>
+      </div>
+      <h3 class="mb-4 text-xl font-semibold text-orange-700">
+        Personalized Dashboard
+      </h3>
+      <p class="text-gray-600">
+        Get a quick overview of your upcoming appointments and health status.
+      </p>
+    </div>
+  </div>
 </div>
 
 <!-- Color Stripe -->
-<div class="stripe bg-orange-400"></div>
+<div class="mt-20 bg-orange-400 stripe"></div>
 
 <!-- Second Image Block -->
-<div class="parallax" style="background-image: url('https://source.unsplash.com/1600x900/?doctor,hospital');"></div>
+<div
+  class="parallax"
+  style="
+    background-image: url('https://source.unsplash.com/1600x900/?doctor,hospital');
+  "
+></div>
 
 {% endblock %}

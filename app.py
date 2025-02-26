@@ -164,14 +164,24 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    appointments = db.collection('appointments').where('user_id', '==', current_user.id).order_by('date').limit(5).stream()
-    health_data = db.collection('health_data').where('user_id', '==', current_user.id).order_by('date', direction=firestore.Query.DESCENDING).limit(1).stream()
-    return render_template('dashboard.html', appointments=appointments, health_data=next(health_data, None))
+    # Process appointments into dictionaries
+    appointments_query = db.collection('appointments').where('user_id', '==', current_user.id).order_by('date').limit(5).stream()
+    appointments = [appt.to_dict() for appt in appointments_query]
+    
+    # Process health data
+    health_data_query = db.collection('health_data').where('user_id', '==', current_user.id).order_by('date', direction=firestore.Query.DESCENDING).limit(1).stream()
+    health_data_doc = next(health_data_query, None)
+    health_data = health_data_doc.to_dict() if health_data_doc else None
+    
+    return render_template('dashboard.html', appointments=appointments, health_data=health_data)
 
 @app.route('/appointments')
 @login_required
 def appointments():
-    appointments = db.collection('appointments').where('user_id', '==', current_user.id).order_by('date').stream()
+    # Fetch appointments and convert them to dictionaries
+    appointments_query = db.collection('appointments').where('user_id', '==', current_user.id).order_by('date').stream()
+    appointments = [appt.to_dict() for appt in appointments_query]  # Convert DocumentSnapshots to dictionaries
+    
     return render_template('appointments.html', appointments=appointments)
 
 @app.route('/find_providers')
@@ -184,48 +194,84 @@ def find_providers():
 @app.route('/book_appointment', methods=['GET', 'POST'])
 @login_required
 def book_appointment():
+    form = FlaskForm()  # Create form instance
     if request.method == 'POST':
-        doctor_name = request.form.get('doctor_name')
-        appointment_type = request.form.get('appointment_type')
-        date_str = request.form.get('date')
-        cost = float(request.form.get('cost', 0))
-        date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
-        
-        db.collection('appointments').add({
-            'user_id': current_user.id,
-            'doctor_name': doctor_name,
-            'type': appointment_type,
-            'date': date,
-            'cost': cost
-        })
-        flash('Appointment booked successfully!')
-        return redirect(url_for('appointments'))
+        if form.validate_on_submit():  # Validate CSRF token
+            doctor_name = request.form.get('doctor_name')
+            appointment_type = request.form.get('appointment_type')
+            date_str = request.form.get('date')
+            cost = float(request.form.get('cost', 0))
+            date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
+            
+            db.collection('appointments').add({
+                'user_id': current_user.id,
+                'doctor_name': doctor_name,
+                'type': appointment_type,
+                'date': date,
+                'cost': cost
+            })
+            flash('Appointment booked successfully!')
+            return redirect(url_for('appointments'))
+        else:
+            flash('Invalid form submission. Please try again.')
     
     providers = db.collection('providers').where('verified', '==', True).stream()
-    return render_template('book_appointment.html', providers=providers)
+    return render_template('book_appointment.html', form=form, providers=providers)  # Pass form to template
 
 @app.route('/health_tracker')
 @login_required
 def health_tracker():
-    health_data = db.collection('health_data').where('user_id', '==', current_user.id).order_by('date', direction=firestore.Query.DESCENDING).limit(7).stream()
-    return render_template('health_tracker.html', health_data=health_data)
+    form = FlaskForm()
+    health_entries = []
+    
+    # Get raw data from Firestore
+    docs = db.collection('health_data')\
+             .where('user_id', '==', current_user.id)\
+             .order_by('date', direction=firestore.Query.DESCENDING)\
+             .limit(7)\
+             .stream()
+    
+    # Process dates for template
+    for doc in docs:
+        data = doc.to_dict()
+        # Convert Firestore timestamp to Python datetime if needed
+        date = data['date']  # Firestore returns a datetime object
+        health_entries.append({
+            'date': date.strftime('%Y-%m-%d'),  # Format as string
+            'steps': data['steps'],
+            'calories': data['calories'],
+            'sleep_hours': data['sleep_hours']
+        })
+    
+    return render_template('health_tracker.html', 
+                         form=form, 
+                         health_data=health_entries)
 
 @app.route('/add_health_data', methods=['POST'])
 @login_required
 def add_health_data():
-    date = datetime.now().date()
-    steps = request.form.get('steps', type=int)
-    calories = request.form.get('calories', type=int)
-    sleep_hours = request.form.get('sleep_hours', type=float)
+    form = FlaskForm()
     
-    db.collection('health_data').add({
-        'user_id': current_user.id,
-        'date': date,
-        'steps': steps,
-        'calories': calories,
-        'sleep_hours': sleep_hours
-    })
-    flash('Health data added successfully!')
+    if form.validate_on_submit():
+        # Use datetime.now() to get a datetime object
+        date = datetime.now()  # This is a datetime.datetime object
+        
+        steps = request.form.get('steps', type=int)
+        calories = request.form.get('calories', type=int)
+        sleep_hours = request.form.get('sleep_hours', type=float)
+        
+        # Add document to Firestore
+        db.collection('health_data').add({
+            'user_id': current_user.id,
+            'date': date,  # datetime.datetime object
+            'steps': steps,
+            'calories': calories,
+            'sleep_hours': sleep_hours
+        })
+        flash('Health data added successfully!')
+    else:
+        flash('Invalid form submission. Please try again.')
+        
     return redirect(url_for('health_tracker'))
 
 @app.route('/api/health_data')

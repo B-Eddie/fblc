@@ -1,142 +1,236 @@
 {% extends "base.html" %} {% block content %}
-<h1 class="mb-8 text-3xl font-bold text-orange-600">Add Your Business</h1>
+<div class="max-w-3xl p-10 mx-auto">
+  <h1 class="mb-8 text-3xl font-bold text-orange-600">Add Your Business</h1>
 
-<form method="POST" class="px-8 pt-6 pb-8 mb-4 rounded shadow-md bg-accent">
-  {{ form.csrf_token }}
-  <div class="mb-4">
-    <label class="block mb-2 text-sm font-bold text-gray-700" for="name">
-      Business Name
-    </label>
-    <input
-      class="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
-      id="name"
-      name="name"
-      type="text"
-      placeholder="HealthCare Clinic"
-      required
-    />
-  </div>
-  <div class="mb-4">
-    <label class="block mb-2 text-sm font-bold text-gray-700" for="specialty">
-      Specialty
-    </label>
-    <input
-      class="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
-      id="specialty"
-      name="specialty"
-      type="text"
-      placeholder="General Practice"
-      required
-    />
-  </div>
-  <div class="mb-4">
-    <label class="block mb-2 text-sm font-bold text-gray-700" for="address">
-      Address
-    </label>
-    <div class="relative">
+  <form method="POST" class="px-8 pt-6 pb-8 mb-4 bg-white rounded shadow-md">
+    {{ form.csrf_token }}
+    <div class="mb-4">
+      <label class="block mb-2 text-sm font-bold text-gray-700" for="name">
+        Business Name
+      </label>
       <input
         class="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
-        id="address"
-        name="address"
+        id="name"
+        name="name"
         type="text"
-        placeholder="Start typing an address..."
-        autocomplete="off"
+        placeholder="HealthCare Clinic"
         required
       />
-      <div
-        id="suggestions"
-        class="absolute z-10 hidden w-full mt-1 bg-white border rounded-md shadow-lg"
-      ></div>
     </div>
-  </div>
-  <div class="mb-6">
-    <label class="block mb-2 text-sm font-bold text-gray-700" for="phone">
+    <div class="mb-4">
+      <label class="block mb-2 text-sm font-bold text-gray-700" for="specialty">
+        Specialty
+      </label>
+      <input
+        class="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
+        id="specialty"
+        name="specialty"
+        type="text"
+        placeholder="General Practice"
+        required
+      />
+    </div>
+    <div class="mb-4">
+      <label class="block mb-2 text-sm font-bold text-gray-700" for="address">
+        Address
+      </label>
+      <div class="relative">
+        <input
+          class="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
+          id="address"
+          name="address"
+          type="text"
+          placeholder="Start typing an address..."
+          autocomplete="off"
+          required
+        />
+        <div
+          id="suggestions"
+          class="absolute z-10 hidden w-full mt-1 overflow-y-auto bg-white border rounded-md shadow-lg max-h-60"
+        ></div>
+      </div>
+    </div>
+    <div class="mb-6">
+      <label class="block mb-2 text-sm font-bold text-gray-700" for="phone">
       Phone Number
-    </label>
-    <input
+      </label>
+      <input
       class="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
       id="phone"
       name="phone"
       type="tel"
       placeholder="123-456-7890"
+      pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}"
       required
-    />
+      />
+    </div>
+    <script>
+      document.getElementById('phone').addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 3 && value.length <= 6) {
+        value = value.slice(0,3) + '-' + value.slice(3);
+      } else if (value.length > 6) {
+        value = value.slice(0,3) + '-' + value.slice(3,6) + '-' + value.slice(6,10);
+      }
+      e.target.value = value;
+      });
+    </script>
+    <div class="flex items-center justify-between">
+      <button
+        class="px-4 py-2 font-bold text-white transition duration-300 bg-orange-500 rounded hover:bg-orange-600 focus:outline-none focus:shadow-outline"
+        type="submit"
+      >
+        Add Business
+      </button>
+      <a
+        href="{{ url_for('manage_business') }}"
+        class="px-4 py-2 font-bold text-gray-700 transition duration-300 border border-gray-300 rounded hover:bg-gray-100 focus:outline-none focus:shadow-outline"
+      >
+        Cancel
+      </a>
+    </div>
+  </form>
+
+  <div
+    class="p-4 mb-4 text-orange-700 bg-orange-100 border-l-4 border-orange-500"
+    role="alert"
+  >
+    <p class="font-bold">Note:</p>
+    <p>
+      Your business will be reviewed for verification before it appears in the
+      provider list. This process may take a few business days.
+    </p>
   </div>
-  <div class="flex items-center justify-between">
-    <button
-      class="px-4 py-2 font-bold text-black transition duration-300 bg-orange-500 rounded hover:bg-orange-600 focus:outline-none focus:shadow-outline"
-      type="submit"
-    >
-      Add Business
-    </button>
-  </div>
-</form>
 
-<div
-  class="p-4 mb-4 text-orange-700 bg-orange-100 border-l-4 border-orange-500"
-  role="alert"
->
-  <p class="font-bold">Note:</p>
-  <p>
-    Your business will be reviewed for verification before it appears in the
-    provider list. This process may take a few business days.
-  </p>
-</div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const addressInput = document.getElementById("address");
+      const suggestionsList = document.getElementById("suggestions");
+      let timeout = null;
 
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const platform = new H.service.Platform({
-      apikey: "lUFTE1skWuIcrj_s0wCZbbM2KWcgT2JnJcKGWHFi4WA",
-    });
+      // Use the platform object from the base template
+      const platform =
+        window.herePlatform ||
+        new H.service.Platform({
+          apikey: "{{ here_api_key }}",
+        });
 
-    const addressInput = document.getElementById("address");
-    const suggestionsList = document.getElementById("suggestions");
-    let timeout = null;
+      // Get user's location for better suggestions
+      let userLocation = "37.7749,-122.4194"; // Default to San Francisco
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            userLocation = `${position.coords.latitude},${position.coords.longitude}`;
+          },
+          (error) => {
+            console.warn("Geolocation error:", error);
+          }
+        );
+      }
 
-    addressInput.addEventListener("input", function () {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        const query = this.value;
+      addressInput.addEventListener("input", function () {
+        clearTimeout(timeout);
+        const query = this.value.trim();
+
+        // Only search if there are at least 3 characters
         if (query.length < 3) {
           suggestionsList.classList.add("hidden");
           return;
         }
 
-        const service = platform.getSearchService();
-        service.autosuggest(
-          {
-            q: query,
-            maxresults: 5,
-          },
-          (result) => {
-            suggestionsList.innerHTML = "";
-            suggestionsList.classList.remove("hidden");
+        timeout = setTimeout(() => {
+          // Use geocode with discovery option instead of autosuggest
+          const searchService = platform.getSearchService();
+          searchService.geocode(
+            {
+              q: query,
+              at: userLocation,
+              limit: 5,
+              resultType: "address",
+            },
+            (result) => {
+              suggestionsList.innerHTML = "";
 
-            result.items.forEach((item) => {
-              const div = document.createElement("div");
-              div.className = "px-4 py-2 cursor-pointer hover:bg-gray-100";
-              div.textContent = item.address.label;
-              div.addEventListener("click", () => {
-                addressInput.value = item.address.label;
+              if (result.items && result.items.length > 0) {
+                suggestionsList.classList.remove("hidden");
+
+                result.items.forEach((item) => {
+                  const div = document.createElement("div");
+                  div.className = "px-4 py-2 cursor-pointer hover:bg-gray-100";
+                  div.textContent = item.address.label;
+                  div.addEventListener("click", () => {
+                    addressInput.value = item.address.label;
+                    suggestionsList.classList.add("hidden");
+                  });
+                  suggestionsList.appendChild(div);
+                });
+              } else {
                 suggestionsList.classList.add("hidden");
-              });
-              suggestionsList.appendChild(div);
-            });
-          },
-          alert
-        );
-      }, 300);
-    });
+              }
+            },
+            (error) => {
+              console.error("Geocoding error:", error);
+            }
+          );
+        }, 500);
+      });
 
-    // Hide suggestions when clicking outside
-    document.addEventListener("click", function (e) {
-      if (
-        !addressInput.contains(e.target) &&
-        !suggestionsList.contains(e.target)
-      ) {
-        suggestionsList.classList.add("hidden");
-      }
+      // Hide suggestions when clicking outside
+      document.addEventListener("click", function (e) {
+        if (
+          !addressInput.contains(e.target) &&
+          !suggestionsList.contains(e.target)
+        ) {
+          suggestionsList.classList.add("hidden");
+        }
+      });
+
+      // Handle keyboard navigation in suggestions list
+      addressInput.addEventListener("keydown", function (e) {
+        if (suggestionsList.classList.contains("hidden")) return;
+
+        const items = suggestionsList.querySelectorAll("div");
+        const active = suggestionsList.querySelector(".bg-orange-100");
+
+        switch (e.key) {
+          case "ArrowDown":
+            e.preventDefault();
+            if (!active) {
+              items[0].classList.add("bg-orange-100");
+            } else {
+              const index = Array.from(items).indexOf(active);
+              if (index < items.length - 1) {
+                active.classList.remove("bg-orange-100");
+                items[index + 1].classList.add("bg-orange-100");
+              }
+            }
+            break;
+
+          case "ArrowUp":
+            e.preventDefault();
+            if (active) {
+              const index = Array.from(items).indexOf(active);
+              if (index > 0) {
+                active.classList.remove("bg-orange-100");
+                items[index - 1].classList.add("bg-orange-100");
+              }
+            }
+            break;
+
+          case "Enter":
+            if (active) {
+              e.preventDefault();
+              addressInput.value = active.textContent;
+              suggestionsList.classList.add("hidden");
+            }
+            break;
+
+          case "Escape":
+            suggestionsList.classList.add("hidden");
+            break;
+        }
+      });
     });
-  });
-</script>
+  </script>
+</div>
 {% endblock %}

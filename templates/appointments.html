@@ -1,61 +1,47 @@
 {% extends "base.html" %} {% block content %}
 <div class="p-10">
-<h1 class="mb-8 text-3xl font-bold text-orange-600">Your Appointments</h1>
+  <h1 class="mb-8 text-3xl font-bold text-orange-600">Your Appointments</h1>
 
-<div
-  class="overflow-hidden border border-orange-200 rounded-lg shadow-lg bg-accent"
->
-  <table class="min-w-full divide-y divide-orange-200">
-    <thead class="bg-orange-50">
-      <tr>
-        <th
-          scope="col"
-          class="px-6 py-3 text-xs font-medium tracking-wider text-left text-orange-500 uppercase"
-        >
-          Doctor
-        </th>
-        <th
-          scope="col"
-          class="px-6 py-3 text-xs font-medium tracking-wider text-left text-orange-500 uppercase"
-        >
-          Type
-        </th>
-        <th
-          scope="col"
-          class="px-6 py-3 text-xs font-medium tracking-wider text-left text-orange-500 uppercase"
-        >
-          Date & Time
-        </th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-orange-200 bg-accent">
-      {% for appointment in appointments %}
-      <tr>
-        <td class="px-6 py-4 blackspace-nowrap">
-          <div class="text-sm font-medium text-gray-900">
-            {{ appointment.doctor_name }}
-          </div>
-        </td>
-        <td class="px-6 py-4 blackspace-nowrap">
-          <div class="text-sm text-gray-500">{{ appointment.type }}</div>
-        </td>
-        <td class="px-6 py-4 blackspace-nowrap">
-          <div class="text-sm text-gray-500">
-            {{ appointment.date.strftime('%Y-%m-%d %H:%M') }}
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+  <div class="space-y-4">
+    {% for appointment in appointments %}
+    <div class="p-4 bg-white rounded-lg shadow">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-semibold text-orange-600">
+            {{ appointment.provider_name }}
+          </h3>
+          <p class="text-gray-600">{{ appointment.provider_specialty }}</p>
+        </div>
+        <div class="text-right">
+          <p class="font-medium">{{ appointment.formatted_date }}</p>
+          <p class="text-gray-600">{{ appointment.time }}</p>
+        </div>
+      </div>
+      <div class="mt-2 text-gray-600">
+        <p>{{ appointment.appointment_type }}</p>
+        <p>{{ appointment.provider_address }}</p>
+        <p>Phone: {{ appointment.provider_phone }}</p>
+        <p class="mt-2">
+          Status:
+          <span
+            class="px-2 py-1 text-sm rounded-full {% if appointment.status == 'pending' %}bg-yellow-100 text-yellow-800 {% elif appointment.status == 'confirmed' %}bg-green-100 text-green-800 {% else %}bg-gray-100 text-gray-800{% endif %}"
+          >
+            {{ appointment.status|title }}
+          </span>
+        </p>
+      </div>
+    </div>
+    {% else %}
+    <p class="py-8 text-center text-gray-600">No appointments scheduled.</p>
+    {% endfor %}
+  </div>
 
-<div class="mt-8">
-  <a
-    href="{{ url_for('book_appointment') }}"
-    class="inline-block px-4 py-2 font-bold text-black transition duration-300 bg-orange-600 rounded-md hover:bg-orange-700"
-    >Book New Appointment</a
-  >
-</div>
+  <div class="mt-8">
+    <a
+      href="{{ url_for('book_appointment') }}"
+      class="inline-block px-4 py-2 font-bold text-black transition duration-300 bg-orange-600 rounded-md hover:bg-orange-700"
+      >Book New Appointment</a
+    >
+  </div>
 </div>
 {% endblock %}

@@ -290,6 +290,9 @@
             modal.classList.add("flex");
             console.log("Modal displayed");
 
+            // Set provider ID in booking form
+            bookingForm.setAttribute("data-provider-id", providerId);
+
             // Small delay to ensure DOM is ready
             setTimeout(() => {
               if (!map) {
@@ -463,10 +466,90 @@
       // Handle booking form submission
       bookingForm.addEventListener("submit", (e) => {
         e.preventDefault();
-        // Here you would typically send the booking data to your server
-        alert("Appointment booked successfully!");
-        modal.classList.add("hidden");
-        modal.classList.remove("flex");
+        const date = document.getElementById("appointmentDate").value;
+        const time = document.getElementById("appointmentTime").value;
+        const appointmentType =
+          document.getElementById("appointmentType").value;
+        const providerId = bookingForm.getAttribute("data-provider-id");
+
+        // Get CSRF token
+        const csrfToken = document
+          .querySelector('meta[name="csrf-token"]')
+          .getAttribute("content");
+
+        // Send data to backend
+        fetch("/api/book-appointment", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": csrfToken,
+          },
+          body: JSON.stringify({
+            provider_id: providerId,
+            date: date,
+            time: time,
+            appointment_type: appointmentType,
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Booking failed");
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Show success notification
+            const notification = document.createElement("div");
+            notification.className =
+              "fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-500";
+            notification.innerHTML = `
+            <div class="flex items-center">
+              <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              <div>
+                <p class="font-bold">Appointment Booked!</p>
+                <p class="text-sm">${appointmentType} on ${date} at ${time}</p>
+              </div>
+            </div>
+          `;
+
+            document.body.appendChild(notification);
+
+            // Remove notification after 5 seconds
+            setTimeout(() => {
+              notification.style.opacity = "0";
+              setTimeout(() => notification.remove(), 500);
+            }, 5000);
+
+            // Close modal
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+          })
+          .catch((error) => {
+            console.error("Booking error:", error);
+            // Show error notification
+            const errorNotification = document.createElement("div");
+            errorNotification.className =
+              "fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg";
+            errorNotification.innerHTML = `
+            <div class="flex items-center">
+              <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+              <div>
+                <p class="font-bold">Booking Failed</p>
+                <p class="text-sm">Please try again later</p>
+              </div>
+            </div>
+          `;
+
+            document.body.appendChild(errorNotification);
+            setTimeout(() => {
+              errorNotification.style.opacity = "0";
+              setTimeout(() => errorNotification.remove(), 500);
+            }, 5000);
+          });
       });
     });
   </script>

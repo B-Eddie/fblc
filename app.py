@@ -172,25 +172,102 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Process appointments into dictionaries
-    appointments_query = db.collection('appointments').where('user_id', '==', current_user.id).order_by('date').limit(5).stream()
-    appointments = [appt.to_dict() for appt in appointments_query]
+    # Process appointments into dictionaries with formatted dates
+    appointments_query = (db.collection('appointments')
+                        .where('user_id', '==', current_user.id)
+                        .order_by('date')
+                        .limit(5)
+                        .stream())
     
-    # Process health data
-    health_data_query = db.collection('health_data').where('user_id', '==', current_user.id).order_by('date', direction=firestore.Query.DESCENDING).limit(1).stream()
-    health_data_doc = next(health_data_query, None)
-    health_data = health_data_doc.to_dict() if health_data_doc else None
-    
-    return render_template('dashboard.html', appointments=appointments, health_data=health_data)
+    appointments = []
+    for appt in appointments_query:
+        appt_data = appt.to_dict()
+        appt_data['id'] = appt.id
+        
+        # Format the date and time
+        try:
+            # Handle date
+            date = appt_data.get('date')
+            if isinstance(date, datetime):
+                appt_data['formatted_date'] = date.strftime('%B %d, %Y')
+            elif isinstance(date, str):
+                date_obj = datetime.strptime(date, '%Y-%m-%d')
+                appt_data['formatted_date'] = date_obj.strftime('%B %d, %Y')
+            else:
+                appt_data['formatted_date'] = 'Date not available'
+
+            # Handle time
+            time = appt_data.get('time')
+            if time:
+                time_obj = datetime.strptime(time, '%H:%M')
+                appt_data['formatted_time'] = time_obj.strftime('%I:%M %p')
+            else:
+                appt_data['formatted_time'] = 'Time not available'
+
+        except ValueError as e:
+            print(f"Date formatting error: {e}")
+            appt_data['formatted_date'] = 'Invalid date format'
+            appt_data['formatted_time'] = 'Invalid time format'
+        
+        appointments.append(appt_data)
+
+    return render_template('dashboard.html', 
+                         appointments=appointments, 
+                         current_time=datetime.now())
 
 @app.route('/appointments')
 @login_required
 def appointments():
-    # Fetch appointments and convert them to dictionaries
-    appointments_query = db.collection('appointments').where('user_id', '==', current_user.id).order_by('date').stream()
-    appointments = [appt.to_dict() for appt in appointments_query]  # Convert DocumentSnapshots to dictionaries
+    # Fetch appointments with provider details
+    appointments_query = (db.collection('appointments')
+                        .where('user_id', '==', current_user.id)
+                        .order_by('date')
+                        .stream())
     
-    return render_template('appointments.html', appointments=appointments)
+    appointments_list = []
+    for appt in appointments_query:
+        appt_data = appt.to_dict()
+        appt_data['id'] = appt.id
+        
+        # Get provider details
+        if 'provider_id' in appt_data:
+            provider_doc = db.collection('providers').document(appt_data['provider_id']).get()
+            if provider_doc.exists:
+                provider_data = provider_doc.to_dict()
+                appt_data['provider_name'] = provider_data.get('name')
+                appt_data['provider_specialty'] = provider_data.get('specialty')
+                appt_data['provider_address'] = provider_data.get('address')
+                appt_data['provider_phone'] = provider_data.get('phone')
+        
+        # Format the date
+        try:
+            if isinstance(appt_data.get('date'), str):
+                # If date is a string, parse it
+                date_obj = datetime.strptime(appt_data['date'], '%Y-%m-%d')
+                appt_data['formatted_date'] = date_obj.strftime('%B %d, %Y')
+            elif isinstance(appt_data.get('date'), datetime):
+                # If date is already a datetime object
+                appt_data['formatted_date'] = appt_data['date'].strftime('%B %d, %Y')
+            else:
+                appt_data['formatted_date'] = 'Date not available'
+        except ValueError:
+            appt_data['formatted_date'] = 'Invalid date format'
+        
+        # Format the time
+        try:
+            if isinstance(appt_data.get('time'), str):
+                time_obj = datetime.strptime(appt_data['time'], '%H:%M')
+                appt_data['formatted_time'] = time_obj.strftime('%I:%M %p')
+            else:
+                appt_data['formatted_time'] = appt_data.get('time', 'Time not available')
+        except ValueError:
+            appt_data['formatted_time'] = 'Invalid time format'
+            
+        appointments_list.append(appt_data)
+    
+    return render_template('appointments.html', 
+                         appointments=appointments_list,
+                         current_time=datetime.now())
 
 @app.route('/find_providers')
 @login_required
@@ -322,26 +399,25 @@ def api_health_data():
 @login_required
 def add_business():
     form = FlaskForm()
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            name = request.form.get('name')
-            specialty = request.form.get('specialty')
-            address = request.form.get('address')
-            phone = request.form.get('phone')
-            
-            business_id = str(uuid.uuid4())
-            db.collection('providers').document(business_id).set({
-                'name': name,
-                'specialty': specialty,
-                'address': address,
-                'phone': phone,
+    here_api_key = "lUFTE1skWuIcrj_s0wCZbbM2KWcgT2JnJcKGWHFi4WA"
+    if request.method == 'POST' and form.validate_on_submit():
+        try:
+            # Add new business
+            db.collection('providers').add({
+                'name': request.form.get('name'),
+                'specialty': request.form.get('specialty'),
+                'address': request.form.get('address'),
+                'phone': request.form.get('phone'),
+                'verified': False,  # New businesses start unverified
                 'owner_id': current_user.id,
-                'verified': False
+                'created_at': firestore.SERVER_TIMESTAMP
             })
-            flash('Business added successfully! It will be visible after verification.')
-            return redirect(url_for('dashboard'))
+            flash('Business added successfully! It will be reviewed for verification.')
+            return redirect(url_for('manage_business'))
+        except Exception as e:
+            flash(f'Error adding business: {e}')
     
-    return render_template('add_business.html', form=form)
+    return render_template('add_business.html', form=form, here_api_key=here_api_key)
 
 @app.route('/api/providers')
 @login_required
@@ -447,6 +523,106 @@ def verify_provider(provider_id):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@app.route('/api/book-appointment', methods=['POST'])
+@login_required
+def api_book_appointment():
+    try:
+        data = request.get_json()
+        
+        # Create appointment document
+        appointment_id = str(uuid.uuid4())
+        db.collection('appointments').document(appointment_id).set({
+            'user_id': current_user.id,
+            'provider_id': data['provider_id'],
+            'date': data['date'],
+            'time': data['time'],
+            'appointment_type': data['appointment_type'],
+            'status': 'pending',
+            'created_at': firestore.SERVER_TIMESTAMP
+        })
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Appointment booked successfully',
+            'appointment_id': appointment_id
+        })
+        
+    except Exception as e:
+        print(f"Error booking appointment: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to book appointment'
+        }), 500
+
+@app.route('/manage_business')
+@login_required
+def manage_business():
+    # Get businesses owned by the current user
+    businesses_query = (db.collection('providers')
+                      .where('owner_id', '==', current_user.id)
+                      .stream())
+    
+    businesses = []
+    for business in businesses_query:
+        business_data = business.to_dict()
+        business_data['id'] = business.id
+        businesses.append(business_data)
+    
+    return render_template('manage_business.html', businesses=businesses)
+
+@app.route('/edit_business/<business_id>', methods=['GET', 'POST'])
+@login_required
+def edit_business(business_id):
+    # Get business document
+    business_doc = db.collection('providers').document(business_id).get()
+    
+    if not business_doc.exists:
+        flash('Business not found.')
+        return redirect(url_for('manage_business'))
+    
+    business_data = business_doc.to_dict()
+    
+    # Check if user is the owner
+    if business_data.get('owner_id') != current_user.id:
+        flash('You do not have permission to edit this business.')
+        return redirect(url_for('manage_business'))
+    
+    form = FlaskForm()
+    if request.method == 'POST' and form.validate_on_submit():
+        try:
+            # Update business data
+            db.collection('providers').document(business_id).update({
+                'name': request.form.get('name'),
+                'specialty': request.form.get('specialty'),
+                'address': request.form.get('address'),
+                'phone': request.form.get('phone'),
+                'updated_at': firestore.SERVER_TIMESTAMP
+            })
+            flash('Business updated successfully!')
+            return redirect(url_for('manage_business'))
+        except Exception as e:
+            flash(f'Error updating business: {e}')
+    
+    return render_template('edit_business.html', form=form, business=business_data)
+
+@app.route('/api/delete-business/<business_id>', methods=['DELETE'])
+@login_required
+def delete_business(business_id):
+    try:
+        # Check if business exists and belongs to user
+        business_doc = db.collection('providers').document(business_id).get()
+        if business_doc.exists:
+            business_data = business_doc.to_dict()
+            if business_data.get('owner_id') == current_user.id:
+                # Delete the business
+                db.collection('providers').document(business_id).delete()
+                return jsonify({'success': True})
+            else:
+                return jsonify({'error': 'Unauthorized'}), 403
+        else:
+            return jsonify({'error': 'Business not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=False)

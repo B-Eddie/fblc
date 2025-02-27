@@ -582,7 +582,8 @@ def manage_business():
 def edit_business(business_id):
     # Get business document
     business_doc = db.collection('providers').document(business_id).get()
-    
+    here_api_key = "lUFTE1skWuIcrj_s0wCZbbM2KWcgT2JnJcKGWHFi4WA"
+
     if not business_doc.exists:
         flash('Business not found.')
         return redirect(url_for('manage_business'))
@@ -610,7 +611,7 @@ def edit_business(business_id):
         except Exception as e:
             flash(f'Error updating business: {e}')
     
-    return render_template('edit_business.html', form=form, business=business_data)
+    return render_template('edit_business.html', form=form, business=business_data, here_api_key=here_api_key)
 
 @app.route('/api/delete-business/<business_id>', methods=['DELETE'])
 @login_required
@@ -630,6 +631,119 @@ def delete_business(business_id):
             return jsonify({'error': 'Business not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/business-appointments/<business_id>')
+@login_required
+def get_business_appointments(business_id):
+    # Check if user owns this business
+    business = db.collection('providers').document(business_id).get()
+    
+    if not business.exists:
+        return jsonify({'error': 'Business not found'}), 404
+        
+    business_data = business.to_dict()
+    if business_data.get('owner_id') != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Get all appointments for this business
+    appointments = []
+    appointments_query = db.collection('appointments').where('provider_id', '==', business_id).stream()
+    
+    for appointment in appointments_query:
+        appointment_data = appointment.to_dict()
+        appointment_data['id'] = appointment.id
+        
+        # Format dates for API consumption
+        if isinstance(appointment_data.get('date'), datetime):
+            appointment_data['date'] = appointment_data['date'].isoformat()
+            
+        # Get client information if available
+        if appointment_data.get('user_id'):
+            client = db.collection('users').document(appointment_data['user_id']).get()
+            if client.exists:
+                client_data = client.to_dict()
+                appointment_data['client_name'] = client_data.get('name')
+                appointment_data['client_email'] = client_data.get('email')
+                appointment_data['client_phone'] = client_data.get('phone')
+                
+        appointments.append(appointment_data)
+    
+    return jsonify(appointments)
+
+@app.route('/api/update-appointment-status/<appointment_id>', methods=['POST'])
+@login_required
+def update_appointment_status(appointment_id):
+    data = request.get_json()
+    status = data.get('status')
+    note = data.get('note', '')
+    
+    if not status:
+        return jsonify({'error': 'Status is required'}), 400
+    
+    try:
+        # Get appointment
+        appointment_ref = db.collection('appointments').document(appointment_id)
+        appointment = appointment_ref.get()
+        
+        if not appointment.exists:
+            return jsonify({'error': 'Appointment not found'}), 404
+            
+        appointment_data = appointment.to_dict()
+        
+        # Check if the business belongs to current user
+        business_id = appointment_data.get('provider_id')
+        if business_id:
+            business = db.collection('providers').document(business_id).get()
+            if business.exists:
+                business_data = business.to_dict()
+                if business_data.get('owner_id') != current_user.id:
+                    return jsonify({'error': 'Unauthorized'}), 403
+            else:
+                return jsonify({'error': 'Provider not found'}), 404
+        else:
+            return jsonify({'error': 'Provider not associated with this appointment'}), 400
+        
+        # Create status update with current timestamp instead of SERVER_TIMESTAMP
+        current_time = datetime.now()
+        status_update = {
+            'status': status,
+            'timestamp': current_time,
+        }
+        
+        if note:
+            status_update['note'] = note
+            
+        # Build the update data
+        update_data = {
+            'status': status,
+            'updated_at': firestore.SERVER_TIMESTAMP  # This is ok for a direct field update
+        }
+        
+        # Add to status history
+        if 'status_updates' not in appointment_data:
+            update_data['status_updates'] = [status_update]
+        else:
+            update_data['status_updates'] = appointment_data['status_updates'] + [status_update]
+        
+        # Update the document
+        appointment_ref.update(update_data)
+        
+        # If user has email, send notification
+        if appointment_data.get('user_id'):
+            user_ref = db.collection('users').document(appointment_data['user_id'])
+            user = user_ref.get()
+            if user.exists:
+                user_data = user.to_dict()
+                if user_data.get('email'):
+                    # Here you would implement email notification
+                    # For now we're just logging it
+                    print(f"Would send email to {user_data['email']} about appointment status change to {status}")
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        print(f"Error updating appointment status: {e}")
+        return jsonify({'error': 'An error occurred while updating the appointment'}), 500
 
 if __name__ == '__main__':
     app.run(debug=False)

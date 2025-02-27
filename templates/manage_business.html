@@ -27,7 +27,8 @@
   </div>
 
   {% if businesses %}
-  <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+  <!-- Business cards section -->
+  <div class="grid gap-6 mb-12 md:grid-cols-2 lg:grid-cols-3">
     {% for business in businesses %}
     <div
       class="p-6 transition duration-300 bg-white border border-orange-200 rounded-lg shadow-md hover:shadow-lg"
@@ -57,13 +58,13 @@
       <div class="flex justify-between mt-6">
         <a
           href="{{ url_for('edit_business', business_id=business.id) }}"
-            class="px-3 py-2 text-sm font-medium text-black transition duration-300 bg-blue-100 border border-blue-500 rounded hover:bg-blue-200"
-          >
-            Edit Details
-          </a>
-          <button
-            onclick="confirmDelete('{{ business.id }}')"
-            class="px-3 py-2 text-sm font-medium text-black transition duration-300 bg-red-100 border border-red-500 rounded hover:bg-red-200"
+          class="px-3 py-2 text-sm font-medium text-black transition duration-300 bg-blue-100 border border-blue-500 rounded hover:bg-blue-200"
+        >
+          Edit Details
+        </a>
+        <button
+          onclick="confirmDelete('{{ business.id }}')"
+          class="px-3 py-2 text-sm font-medium text-black transition duration-300 bg-red-100 border border-red-500 rounded hover:bg-red-200"
         >
           Delete
         </button>
@@ -71,7 +72,279 @@
     </div>
     {% endfor %}
   </div>
+
+  <!-- Appointment Management Section -->
+  <div class="mt-12">
+    <h2 class="mb-6 text-2xl font-bold text-orange-600">
+      <div class="flex items-center">
+        <svg
+          class="w-6 h-6 mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+          ></path>
+        </svg>
+        Appointment Management
+      </div>
+    </h2>
+
+    <!-- Business selector for appointments -->
+    <div class="mb-6">
+      <label
+        for="business-selector"
+        class="block text-sm font-medium text-gray-700"
+        >Select Business</label
+      >
+      <select
+        id="business-selector"
+        class="block w-full py-2 pl-3 pr-10 mt-1 text-base border-gray-300 rounded-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+      >
+        {% for business in businesses %}
+        <option value="{{ business.id }}">{{ business.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Filter controls -->
+    <div class="flex flex-wrap gap-4 mb-6">
+      <div>
+        <label for="date-filter" class="block text-sm font-medium text-gray-700"
+          >Date Range</label
+        >
+        <select
+          id="date-filter"
+          class="block w-full py-2 pl-3 pr-10 mt-1 text-base border-gray-300 rounded-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+        >
+          <option value="all">All Dates</option>
+          <option value="today">Today</option>
+          <option value="tomorrow">Tomorrow</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+        </select>
+      </div>
+      <div>
+        <label
+          for="status-filter"
+          class="block text-sm font-medium text-gray-700"
+          >Status</label
+        >
+        <select
+          id="status-filter"
+          class="block w-full py-2 pl-3 pr-10 mt-1 text-base border-gray-300 rounded-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+        >
+          <option value="all">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div>
+        <label
+          for="search-appointments"
+          class="block text-sm font-medium text-gray-700"
+          >Search</label
+        >
+        <input
+          type="text"
+          id="search-appointments"
+          class="block w-full mt-1 border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+          placeholder="Search by name or type..."
+        />
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between mb-4">
+      <p class="text-sm text-gray-600">
+        Showing <span id="appointment-count">0</span> appointments
+      </p>
+      <button
+        id="export-csv"
+        class="px-3 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700"
+      >
+        <svg
+          class="inline w-4 h-4 mr-1"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+          ></path>
+        </svg>
+        Export to CSV
+      </button>
+    </div>
+
+    <!-- Appointment data table -->
+    <div class="overflow-x-auto rounded-lg shadow">
+      <table class="min-w-full bg-white divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th
+              scope="col"
+              class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+            >
+              Client
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+            >
+              Date & Time
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+            >
+              Type
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+            >
+              Status
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+            >
+              Contact
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-xs font-medium tracking-wider text-gray-500 uppercase"
+            >
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody id="appointments-table-body" class="divide-y divide-gray-200">
+          <!-- Appointments will be loaded here via JavaScript -->
+          <tr>
+            <td colspan="6" class="px-6 py-4 text-sm text-center text-gray-500">
+              Loading appointments...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between px-4 mt-4">
+      <div class="flex justify-between flex-1 sm:hidden">
+        <button
+          id="prev-page-mobile"
+          class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+        >
+          Previous
+        </button>
+        <button
+          id="next-page-mobile"
+          class="relative inline-flex items-center px-4 py-2 ml-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+        >
+          Next
+        </button>
+      </div>
+      <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-gray-700">
+            Showing
+            <span class="font-medium" id="page-start">1</span>
+            to
+            <span class="font-medium" id="page-end">10</span>
+            of
+            <span class="font-medium" id="total-results">20</span>
+            appointments
+          </p>
+        </div>
+        <div>
+          <nav
+            class="relative z-0 inline-flex -space-x-px rounded-md shadow-sm"
+            aria-label="Pagination"
+            id="pagination-container"
+          >
+            <!-- Pagination will be generated here -->
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Appointment Detail Modal -->
+  <div
+    id="appointment-modal"
+    class="fixed inset-0 z-50 flex items-center justify-center hidden bg-black bg-opacity-50"
+  >
+    <div
+      class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+    >
+      <div class="flex items-center justify-between p-6 border-b">
+        <h3 class="text-lg font-medium text-gray-900">Appointment Details</h3>
+        <button
+          onclick="closeAppointmentModal()"
+          class="text-gray-400 hover:text-gray-500"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            ></path>
+          </svg>
+        </button>
+      </div>
+      <div id="appointment-details" class="p-6">
+        <!-- Appointment details will be injected here -->
+      </div>
+      <div class="flex justify-end gap-3 px-6 py-3 bg-gray-50">
+        <button
+          id="modal-cancel"
+          class="px-4 py-2 text-red-800 bg-red-100 border border-red-300 rounded hover:bg-red-200"
+        >
+          Cancel Appointment
+        </button>
+        <button
+          id="modal-confirm"
+          class="px-4 py-2 text-green-800 bg-green-100 border border-green-300 rounded hover:bg-green-200"
+        >
+          Confirm Appointment
+        </button>
+        <button
+          id="modal-complete"
+          class="px-4 py-2 text-blue-800 bg-blue-100 border border-blue-300 rounded hover:bg-blue-200"
+        >
+          Mark Completed
+        </button>
+        <button
+          onclick="closeAppointmentModal()"
+          class="px-4 py-2 text-gray-800 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
   {% else %}
+  <!-- Empty state when no businesses exist -->
   <div
     class="p-8 text-center bg-white border border-orange-200 rounded-lg shadow-md"
   >
@@ -106,6 +379,7 @@
 </div>
 
 <script>
+  // Existing delete confirmation function
   function confirmDelete(businessId) {
     if (
       confirm(
@@ -136,5 +410,659 @@
         });
     }
   }
+
+  // Appointment management code
+  document.addEventListener("DOMContentLoaded", function () {
+    const businessSelector = document.getElementById("business-selector");
+    const dateFilter = document.getElementById("date-filter");
+    const statusFilter = document.getElementById("status-filter");
+    const searchField = document.getElementById("search-appointments");
+
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let appointments = [];
+    let filteredAppointments = [];
+
+    // Load initial appointments for the first business
+    if (businessSelector) {
+      loadAppointments(businessSelector.value);
+
+      // Set up event listeners
+      businessSelector.addEventListener("change", function () {
+        loadAppointments(this.value);
+      });
+
+      dateFilter.addEventListener("change", filterAppointments);
+      statusFilter.addEventListener("change", filterAppointments);
+      searchField.addEventListener("input", filterAppointments);
+    }
+
+    function loadAppointments(businessId) {
+      const tableBody = document.getElementById("appointments-table-body");
+      tableBody.innerHTML =
+        '<tr><td colspan="6" class="px-6 py-4 text-sm text-center text-gray-500">Loading appointments...</td></tr>';
+
+      fetch(`/api/business-appointments/${businessId}`)
+        .then((response) => response.json())
+        .then((data) => {
+          appointments = data;
+          filteredAppointments = [...appointments];
+          currentPage = 1;
+          filterAppointments();
+        })
+        .catch((error) => {
+          console.error("Error loading appointments:", error);
+          tableBody.innerHTML =
+            '<tr><td colspan="6" class="px-6 py-4 text-sm text-center text-red-500">Error loading appointments. Please try again.</td></tr>';
+        });
+    }
+
+    function filterAppointments() {
+      const dateValue = dateFilter.value;
+      const statusValue = statusFilter.value;
+      const searchValue = searchField.value.toLowerCase();
+
+      // Filter by date
+      filteredAppointments = appointments.filter((appointment) => {
+        const appointmentDate = new Date(appointment.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const weekEnd = new Date(today);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+
+        const monthEnd = new Date(today);
+        monthEnd.setMonth(monthEnd.getMonth() + 1);
+
+        let dateMatch = true;
+
+        if (dateValue === "today") {
+          dateMatch = appointmentDate >= today && appointmentDate < tomorrow;
+        } else if (dateValue === "tomorrow") {
+          dateMatch =
+            appointmentDate >= tomorrow &&
+            appointmentDate < new Date(tomorrow.getTime() + 86400000);
+        } else if (dateValue === "week") {
+          dateMatch = appointmentDate >= today && appointmentDate < weekEnd;
+        } else if (dateValue === "month") {
+          dateMatch = appointmentDate >= today && appointmentDate < monthEnd;
+        }
+
+        // Filter by status
+        let statusMatch =
+          statusValue === "all" || appointment.status === statusValue;
+
+        // Filter by search text
+        let searchMatch = true;
+        if (searchValue) {
+          searchMatch =
+            (appointment.client_name &&
+              appointment.client_name.toLowerCase().includes(searchValue)) ||
+            (appointment.type &&
+              appointment.type.toLowerCase().includes(searchValue)) ||
+            (appointment.notes &&
+              appointment.notes.toLowerCase().includes(searchValue));
+        }
+
+        return dateMatch && statusMatch && searchMatch;
+      });
+
+      // Sort by date (most recent first)
+      filteredAppointments.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      renderAppointments();
+      updatePagination();
+    }
+
+    function renderAppointments() {
+      const tableBody = document.getElementById("appointments-table-body");
+      tableBody.innerHTML = "";
+
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = Math.min(
+        startIndex + itemsPerPage,
+        filteredAppointments.length
+      );
+      const pageAppointments = filteredAppointments.slice(startIndex, endIndex);
+
+      if (pageAppointments.length === 0) {
+        tableBody.innerHTML =
+          '<tr><td colspan="6" class="px-6 py-4 text-sm text-center text-gray-500">No appointments found matching your criteria.</td></tr>';
+        return;
+      }
+
+      pageAppointments.forEach((appointment) => {
+        const row = document.createElement("tr");
+        row.className = "hover:bg-gray-50 cursor-pointer";
+        row.onclick = () => showAppointmentDetails(appointment);
+
+        // Format date
+        const appointmentDate = new Date(appointment.date);
+        const formattedDate = appointmentDate.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+
+        // Format time
+        const timeString = appointment.time || "";
+        let formattedTime = "";
+        if (timeString) {
+          const [hours, minutes] = timeString.split(":");
+          const time = new Date();
+          time.setHours(parseInt(hours), parseInt(minutes));
+          formattedTime = time.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          });
+        }
+
+        // Status badge
+        const statusColors = {
+          pending: "bg-yellow-100 text-yellow-800",
+          confirmed: "bg-green-100 text-green-800",
+          completed: "bg-blue-100 text-blue-800",
+          cancelled: "bg-red-100 text-red-800",
+        };
+
+        const statusClass =
+          statusColors[appointment.status] || "bg-gray-100 text-gray-800";
+
+        row.innerHTML = `
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">${
+              appointment.client_name || "Unknown"
+            }</div>
+            <div class="text-sm text-gray-500">${
+              appointment.client_email || ""
+            }</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">${formattedDate}</div>
+            <div class="text-sm text-gray-500">${formattedTime}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">${
+              appointment.type || "General"
+            }</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+              ${appointment.status || "pending"}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+            ${appointment.client_phone || "No phone provided"}
+          </td>
+          <td class="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
+            <div class="flex justify-end space-x-2">
+              <button class="text-indigo-600 hover:text-indigo-900" onclick="event.stopPropagation(); showAppointmentDetails('${
+                appointment.id
+              }')">
+                View
+              </button>
+              <button class="text-green-600 hover:text-green-900" onclick="event.stopPropagation(); updateAppointmentStatus('${
+                appointment.id
+              }', 'confirmed')">
+                Confirm
+              </button>
+              <button class="text-red-600 hover:text-red-900" onclick="event.stopPropagation(); updateAppointmentStatus('${
+                appointment.id
+              }', 'cancelled')">
+                Cancel
+              </button>
+            </div>
+          </td>
+        `;
+
+        tableBody.appendChild(row);
+      });
+
+      // Update pagination text
+      document.getElementById("page-start").textContent = startIndex + 1;
+      document.getElementById("page-end").textContent = endIndex;
+      document.getElementById("total-results").textContent =
+        filteredAppointments.length;
+
+      // Update appointment count
+      document.getElementById("appointment-count").textContent =
+        filteredAppointments.length;
+    }
+
+    function updatePagination() {
+      const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+      const paginationContainer = document.getElementById(
+        "pagination-container"
+      );
+      paginationContainer.innerHTML = "";
+
+      // Previous button
+      const prevButton = document.createElement("button");
+      prevButton.className = `relative inline-flex items-center px-2 py-2 rounded-l-md border ${
+        currentPage === 1
+          ? "border-gray-300 bg-white text-gray-300 cursor-not-allowed"
+          : "border-gray-300 bg-white text-gray-500 hover:bg-gray-50"
+      }`;
+      prevButton.innerHTML = `<span class="sr-only">Previous</span>
+        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>`;
+
+      if (currentPage > 1) {
+        prevButton.addEventListener("click", () => {
+          currentPage--;
+          renderAppointments();
+          updatePagination();
+        });
+      }
+
+      paginationContainer.appendChild(prevButton);
+
+      // Page numbers
+      const maxVisiblePages = 5;
+      let startPage = Math.max(
+        1,
+        currentPage - Math.floor(maxVisiblePages / 2)
+      );
+      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+      if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        const pageButton = document.createElement("button");
+        pageButton.className = `relative inline-flex items-center px-4 py-2 border ${
+          i === currentPage
+            ? "bg-orange-50 border-orange-500 text-orange-600 z-10"
+            : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+        }`;
+        pageButton.textContent = i;
+
+        if (i !== currentPage) {
+          pageButton.addEventListener("click", () => {
+            currentPage = i;
+            renderAppointments();
+            updatePagination();
+          });
+        }
+
+        paginationContainer.appendChild(pageButton);
+      }
+
+      // Next button
+      const nextButton = document.createElement("button");
+      nextButton.className = `relative inline-flex items-center px-2 py-2 rounded-r-md border ${
+        currentPage === totalPages
+          ? "border-gray-300 bg-white text-gray-300 cursor-not-allowed"
+          : "border-gray-300 bg-white text-gray-500 hover:bg-gray-50"
+      }`;
+      nextButton.innerHTML = `<span class="sr-only">Next</span>
+        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+        </svg>`;
+
+      if (currentPage < totalPages) {
+        nextButton.addEventListener("click", () => {
+          currentPage++;
+          renderAppointments();
+          updatePagination();
+        });
+      }
+
+      paginationContainer.appendChild(nextButton);
+
+      // Mobile pagination
+      document.getElementById("prev-page-mobile").disabled = currentPage === 1;
+      document.getElementById("next-page-mobile").disabled =
+        currentPage === totalPages;
+
+      document
+        .getElementById("prev-page-mobile")
+        .addEventListener("click", () => {
+          if (currentPage > 1) {
+            currentPage--;
+            renderAppointments();
+            updatePagination();
+          }
+        });
+
+      document
+        .getElementById("next-page-mobile")
+        .addEventListener("click", () => {
+          if (currentPage < totalPages) {
+            currentPage++;
+            renderAppointments();
+            updatePagination();
+          }
+        });
+    }
+
+    // Appointment details modal
+    window.showAppointmentDetails = function (appointmentId) {
+      const appointment = appointments.find((a) => a.id === appointmentId);
+      if (!appointment) return;
+
+      const modal = document.getElementById("appointment-modal");
+      const detailsContainer = document.getElementById("appointment-details");
+
+      // Format date and time
+      const appointmentDate = new Date(appointment.date);
+      const formattedDate = appointmentDate.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+
+      let formattedTime = "No time specified";
+      if (appointment.time) {
+        const [hours, minutes] = appointment.time.split(":");
+        const time = new Date();
+        time.setHours(parseInt(hours), parseInt(minutes));
+        formattedTime = time.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+      }
+
+      // Build appointment details HTML
+      detailsContainer.innerHTML = `
+        <div class="space-y-6">
+          <div>
+            <h4 class="text-sm font-medium text-gray-500">Client Information</h4>
+            <p class="mt-1 text-lg font-semibold text-gray-900">${
+              appointment.client_name || "Unknown"
+            }</p>
+            <div class="mt-2 space-y-1 text-sm text-gray-600">
+              ${
+                appointment.client_email
+                  ? `<p>Email: ${appointment.client_email}</p>`
+                  : ""
+              }
+              ${
+                appointment.client_phone
+                  ? `<p>Phone: ${appointment.client_phone}</p>`
+                  : ""
+              }
+            </div>
+          </div>
+          
+          <div class="pt-4 border-t border-gray-200">
+            <h4 class="text-sm font-medium text-gray-500">Appointment Details</h4>
+            <div class="grid grid-cols-2 gap-4 mt-2 text-sm text-gray-600">
+              <div>
+                <p class="font-medium">Date:</p>
+                <p>${formattedDate}</p>
+              </div>
+              <div>
+                <p class="font-medium">Time:</p>
+                <p>${formattedTime}</p>
+              </div>
+              <div>
+                <p class="font-medium">Type:</p>
+                <p>${appointment.type || "General"}</p>
+              </div>
+              <div>
+                <p class="font-medium">Status:</p>
+                <p class="capitalize">${appointment.status || "pending"}</p>
+              </div>
+            </div>
+          </div>
+          
+          ${
+            appointment.notes
+              ? `
+          <div class="pt-4 border-t border-gray-200">
+            <h4 class="text-sm font-medium text-gray-500">Notes</h4>
+            <p class="mt-2 text-sm text-gray-600">${appointment.notes}</p>
+          </div>
+          `
+              : ""
+          }
+          
+          <div class="pt-4 border-t border-gray-200">
+            <h4 class="text-sm font-medium text-gray-500">Appointment History</h4>
+            <div class="mt-2 space-y-3 overflow-y-auto max-h-40">
+              <div class="p-3 text-sm rounded bg-gray-50">
+                <p class="text-xs text-gray-500">Created on:</p>
+                <p>${new Date(
+                  appointment.created_at || Date.now()
+                ).toLocaleString()}</p>
+              </div>
+              ${
+                appointment.status_updates && appointment.status_updates.length
+                  ? appointment.status_updates
+                      .map(
+                        (update) => `
+                  <div class="p-3 text-sm rounded bg-gray-50">
+                    <p class="text-xs text-gray-500">${update.status} on:</p>
+                    <p>${
+                      update.timestamp instanceof Object
+                        ? new Date(update.timestamp.seconds * 1000)
+                        : new Date(update.timestamp)
+                    }.toLocaleString()</p>
+                    ${
+                      update.note
+                        ? `<p class="mt-1 italic">"${update.note}"</p>`
+                        : ""
+                    }
+                  </div>
+                `
+                      )
+                      .join("")
+                  : '<div class="text-sm text-gray-500">No status updates yet</div>'
+              }
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Configure action buttons based on current status
+      const cancelBtn = document.getElementById("modal-cancel");
+      const confirmBtn = document.getElementById("modal-confirm");
+      const completeBtn = document.getElementById("modal-complete");
+
+      // Reset button visibility
+      cancelBtn.style.display = "block";
+      confirmBtn.style.display = "block";
+      completeBtn.style.display = "block";
+
+      // Set appropriate button visibility based on current status
+      switch (appointment.status) {
+        case "cancelled":
+          cancelBtn.style.display = "none";
+          confirmBtn.style.display = "none";
+          completeBtn.style.display = "none";
+          break;
+        case "confirmed":
+          confirmBtn.style.display = "none";
+          break;
+        case "completed":
+          confirmBtn.style.display = "none";
+          completeBtn.style.display = "none";
+          break;
+        default: // pending
+          break;
+      }
+
+      // Configure button actions
+      cancelBtn.onclick = () =>
+        updateAppointmentStatus(appointment.id, "cancelled");
+      confirmBtn.onclick = () =>
+        updateAppointmentStatus(appointment.id, "confirmed");
+      completeBtn.onclick = () =>
+        updateAppointmentStatus(appointment.id, "completed");
+
+      // Show modal
+      modal.classList.remove("hidden");
+    };
+
+    window.updateAppointmentStatus = function (appointmentId, newStatus) {
+      const csrfToken = document
+        .querySelector('meta[name="csrf-token"]')
+        .getAttribute("content");
+
+      // Show confirmation based on status
+      let confirmMsg = "";
+      let statusNote = "";
+
+      switch (newStatus) {
+        case "confirmed":
+          confirmMsg = "Confirm this appointment?";
+          break;
+        case "cancelled":
+          confirmMsg = "Cancel this appointment?";
+          statusNote = prompt(
+            "Please provide a reason for cancellation (optional):"
+          );
+          break;
+        case "completed":
+          confirmMsg = "Mark this appointment as completed?";
+          statusNote = prompt(
+            "Add any notes about this completed appointment (optional):"
+          );
+          break;
+        default:
+          confirmMsg = `Change appointment status to ${newStatus}?`;
+      }
+
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+
+      // Update UI to show loading state
+      const modal = document.getElementById("appointment-modal");
+      modal.classList.add("opacity-50", "pointer-events-none");
+
+      // Make API call to update status
+      fetch(`/api/update-appointment-status/${appointmentId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          note: statusNote,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            // Update local data
+            const index = appointments.findIndex((a) => a.id === appointmentId);
+            if (index !== -1) {
+              appointments[index].status = newStatus;
+
+              // Add status update to history if it doesn't exist
+              if (!appointments[index].status_updates) {
+                appointments[index].status_updates = [];
+              }
+
+              appointments[index].status_updates.push({
+                status: newStatus,
+                timestamp: new Date().toISOString(),
+                note: statusNote,
+              });
+
+              // Re-filter and re-render
+              filterAppointments();
+
+              // Update modal if still open
+              if (!modal.classList.contains("hidden")) {
+                showAppointmentDetails(appointmentId);
+              }
+
+              // Show success message
+              const message = document.createElement("div");
+              message.className =
+                "fixed bottom-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-lg z-50";
+              message.innerHTML = `<p>Appointment successfully updated to <strong>${newStatus}</strong></p>`;
+              document.body.appendChild(message);
+
+              // Remove message after 3 seconds
+              setTimeout(() => {
+                message.remove();
+              }, 3000);
+            }
+          } else {
+            alert(`Error: ${data.error || "Failed to update appointment"}`);
+          }
+
+          // Remove loading state
+          modal.classList.remove("opacity-50", "pointer-events-none");
+        })
+        .catch((error) => {
+          console.error("Error updating appointment status:", error);
+          alert(
+            "An error occurred while updating the appointment. Please try again."
+          );
+          modal.classList.remove("opacity-50", "pointer-events-none");
+        });
+    };
+
+    // Export appointments to CSV
+    document
+      .getElementById("export-csv")
+      .addEventListener("click", function () {
+        // Create CSV content
+        const headers = [
+          "Date",
+          "Time",
+          "Client Name",
+          "Client Email",
+          "Client Phone",
+          "Type",
+          "Status",
+          "Notes",
+        ];
+        let csvContent = headers.join(",") + "\n";
+
+        // Add data rows
+        filteredAppointments.forEach((appointment) => {
+          const dateStr = new Date(appointment.date).toLocaleDateString();
+          const row = [
+            `"${dateStr}"`,
+            `"${appointment.time || ""}"`,
+            `"${appointment.client_name || ""}"`,
+            `"${appointment.client_email || ""}"`,
+            `"${appointment.client_phone || ""}"`,
+            `"${appointment.type || ""}"`,
+            `"${appointment.status || ""}"`,
+            `"${
+              appointment.notes ? appointment.notes.replace(/"/g, '""') : ""
+            }"`, // Escape quotes in notes
+          ];
+          csvContent += row.join(",") + "\n";
+        });
+
+        // Create and trigger download
+        const blob = new Blob([csvContent], {
+          type: "text/csv;charset=utf-8;",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute(
+          "download",
+          `appointments-${new Date().toISOString().split("T")[0]}.csv`
+        );
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+  });
+
+  window.closeAppointmentModal = function () {
+    document.getElementById("appointment-modal").classList.add("hidden");
+  };
 </script>
 {% endblock %}

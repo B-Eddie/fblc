@@ -1,5 +1,4 @@
-{% extends "base.html" %} 
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <div class="p-10">
   <h1 class="mb-8 text-3xl font-bold text-orange-600">
     Find Healthcare Providers
@@ -199,6 +198,64 @@
           .catch((error) => console.error("Error:", error));
       }
 
+      function calculateDistance(provider) {
+        if (!provider.address) return;
+
+        // Use the HERE geocoding service to get coordinates of the provider address
+        const geocoder = platform.getSearchService();
+        geocoder.geocode(
+          {
+            q: provider.address,
+            at: `${userLocation.lat},${userLocation.lng}`,
+          },
+          (result) => {
+            if (result.items && result.items.length > 0) {
+              const coords = result.items[0].position;
+
+              // Calculate the distance using the Haversine formula
+              const distance = getDistanceFromLatLonInMiles(
+                userLocation.lat,
+                userLocation.lng,
+                coords.lat,
+                coords.lng
+              );
+
+              // Update the provider's distance
+              provider.distance = distance;
+
+              // Update the UI to show the calculated distance
+              const distanceElements = document.querySelectorAll(
+                `.distance-display[data-provider-id="${provider.id}"]`
+              );
+              distanceElements.forEach((el) => {
+                el.textContent = `${distance.toFixed(1)} miles away`;
+              });
+            }
+          },
+          (error) => console.error("Geocoding error:", error)
+        );
+      }
+
+      // Haversine formula to calculate distance between two coordinates
+      function getDistanceFromLatLonInMiles(lat1, lon1, lat2, lon2) {
+        const R = 3958.8; // Radius of the Earth in miles
+        const dLat = deg2rad(lat2 - lat1);
+        const dLon = deg2rad(lon2 - lon1);
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(deg2rad(lat1)) *
+            Math.cos(deg2rad(lat2)) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c; // Distance in miles
+        return distance;
+      }
+
+      function deg2rad(deg) {
+        return deg * (Math.PI / 180);
+      }
+
       function initializeProviderMap(mapDivId, address) {
         const defaultLayers = platform.createDefaultLayers();
         const providerMap = new H.Map(
@@ -242,24 +299,46 @@
 
       function renderProviders(providersToRender) {
         providerList.innerHTML = "";
+
+        // Sort providers by distance if available
+        if (sortDistance.value === "asc") {
+          providersToRender.sort(
+            (a, b) => (a.distance || 999) - (b.distance || 999)
+          );
+        } else if (sortDistance.value === "desc") {
+          providersToRender.sort(
+            (a, b) => (b.distance || 0) - (a.distance || 0)
+          );
+        }
+
         providersToRender.forEach((provider) => {
           const card = document.createElement("div");
           card.className =
             "bg-white shadow-lg rounded-lg border border-orange-200 overflow-hidden transition duration-300 transform hover:scale-105";
 
           const mapDivId = `map-${provider.id}`;
-          const distance = provider.distance
+
+          // Format distance or handle missing calculation
+          const distanceDisplay = provider.distance
             ? `${provider.distance.toFixed(1)} miles away`
             : "Distance calculating...";
 
           card.innerHTML = `
             <div id="${mapDivId}" class="w-full h-48"></div>
             <div class="p-6">
-              <h3 class="mb-2 text-lg font-semibold text-orange-600">${provider.name}</h3>
-              <p class="mb-2 text-gray-600">${provider.specialty}</p>
+              <h3 class="mb-2 text-lg font-semibold text-orange-600">${
+                provider.name
+              }</h3>
+              <p class="mb-2 text-gray-600">${
+                provider.specialty || "General Practice"
+              }</p>
               <p class="mb-2 text-gray-600">${provider.address}</p>
-              <p class="mb-4 text-gray-600">${distance}</p>
-              <button class="px-4 py-2 font-bold text-white transition duration-300 bg-orange-500 rounded-full hover:bg-orange-600 book-appointment" data-id="${provider.id}">
+              <p class="mb-4 text-gray-600 distance-display" data-provider-id="${
+                provider.id
+              }">${distanceDisplay}</p>
+              <button class="px-4 py-2 font-bold text-white transition duration-300 bg-orange-500 rounded-full hover:bg-orange-600 book-appointment" data-id="${
+                provider.id
+              }">
                 Book Appointment
               </button>
             </div>
@@ -267,6 +346,11 @@
 
           providerList.appendChild(card);
           initializeProviderMap(mapDivId, provider.address);
+
+          // If distance isn't calculated yet, calculate it now
+          if (!provider.distance && provider.address) {
+            calculateDistance(provider);
+          }
         });
 
         // Add event listeners to book appointment buttons

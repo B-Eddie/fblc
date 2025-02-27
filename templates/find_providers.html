@@ -1,4 +1,5 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+{% block content %}
 <div class="p-10">
   <h1 class="mb-8 text-3xl font-bold text-orange-600">
     Find Healthcare Providers
@@ -224,7 +225,7 @@
         });
       }
 
-      // Add this new function to initialize maps
+      // Initialize maps for provider cards
       function initializeProviderMap(mapDivId, address) {
         const defaultLayers = platform.createDefaultLayers();
         const providerMap = new H.Map(
@@ -241,11 +242,13 @@
           new H.mapevents.MapEvents(providerMap)
         );
 
-        // Geocode the address and center the map
+        // Geocode the address and center the map.
+        // A location hint ("at") is provided so that only the street address is needed from the user.
         const geocoder = platform.getSearchService();
         geocoder.geocode(
           {
-            q: address,
+            q: address,  // e.g., "1330 Montclair Dr"
+            at: "37.7749,-122.4194" // Replace with coordinates relevant to your area
           },
           (result) => {
             if (result.items.length > 0) {
@@ -253,11 +256,10 @@
               providerMap.setCenter({ lat: coords.lat, lng: coords.lng });
 
               // Add a marker
-              const marker = new H.map.Marker({
-                lat: coords.lat,
-                lng: coords.lng,
-              });
+              const marker = new H.map.Marker({ lat: coords.lat, lng: coords.lng });
               providerMap.addObject(marker);
+            } else {
+              console.warn("No results found for the given address.");
             }
           },
           (error) => {
@@ -273,12 +275,12 @@
 
       // Initialize HERE Map
       const platform = new H.service.Platform({
-        apikey: "lUFTE1skWuIcrj_s0wCZbbM2KWcgT2JnJcKGWHFi4WA", // Replace with your HERE API key
+        apikey: "lUFTE1skWuIcrj_s0wCZbbM2KWcgT2JnJcKGWHFi4WA",
       });
 
       let map = null;
 
-      // Update openBookingModal function
+      // Open booking modal and initialize modal map
       function openBookingModal(providerId) {
         fetch(`/api/provider/${providerId}`)
           .then((response) => response.json())
@@ -314,11 +316,13 @@
               );
             }
 
-            // Geocode the address and center the map
+            // Geocode the provider address and center the modal map.
+            // The "at" parameter is added to satisfy the HERE API requirement.
             const geocoder = platform.getSearchService();
             geocoder.geocode(
               {
                 q: provider.address,
+                at: "37.7749,-122.4194" // Replace with coordinates relevant to your area
               },
               (result) => {
                 if (result.items.length > 0) {
@@ -332,9 +336,13 @@
                   });
                   map.removeObjects(map.getObjects()); // Clear existing markers
                   map.addObject(marker);
+                } else {
+                  console.warn("No results found for the given address in modal.");
                 }
               },
-              alert
+              (error) => {
+                console.error("Geocoding error in modal:", error);
+              }
             );
 
             modal.classList.remove("hidden");
@@ -343,11 +351,6 @@
       }
 
       // Close modal
-      // document.getElementById("bookingModal").addEventListener("click", () => {
-      //   modal.classList.add("hidden");
-      //   modal.classList.remove("flex");
-      // });
-
       closeModal.addEventListener("click", () => {
         modal.classList.add("hidden");
         modal.classList.remove("flex");

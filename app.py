@@ -16,7 +16,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key')
 csrf = CSRFProtect(app)
 
 # Initialize Firebase
-cred = credentials.Certificate("fblc/firebaseconfig.json")
+cred = credentials.Certificate("firebaseconfig.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -243,9 +243,13 @@ def health_tracker():
             'sleep_hours': data['sleep_hours']
         })
     
+    health_data_query = db.collection('health_data').where('user_id', '==', current_user.id).order_by('date', direction=firestore.Query.DESCENDING).limit(1).stream()
+    health_data_doc = next(health_data_query, None)
+    health_data = health_data_doc.to_dict() if health_data_doc else None
+
     return render_template('health_tracker.html', 
                          form=form, 
-                         health_data=health_entries)
+                         health_data=health_entries, health=health_data)
 
 @app.route('/add_health_data', methods=['POST'])
 @login_required

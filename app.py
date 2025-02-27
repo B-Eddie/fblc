@@ -14,6 +14,11 @@ from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 from functools import lru_cache
 
+# Matplotlib imports
+import base64
+from io import BytesIO
+from matplotlib.figure import Figure
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key')
 csrf = CSRFProtect(app)
@@ -285,17 +290,31 @@ def add_health_data():
 @login_required
 def api_health_data():
     days = request.args.get('days', default=7, type=int)
-    end_date = datetime.now().date()
+    end_date = datetime.now()
     start_date = end_date - timedelta(days=days-1)
     
-    health_data = db.collection('health_data').where('user_id', '==', current_user.id).where('date', '>=', start_date).where('date', '<=', end_date).order_by('date').stream()
+    # Set start date to midnight and end date to 23:59:59
+    start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
     
-    data = [{
-        'date': item.to_dict()['date'].strftime('%Y-%m-%d'),
-        'steps': item.to_dict()['steps'],
-        'calories': item.to_dict()['calories'],
-        'sleep_hours': item.to_dict()['sleep_hours']
-    } for item in health_data]
+    # Query health data for the current user
+    health_data = db.collection('health_data')\
+        .where('user_id', '==', current_user.id)\
+        .where('date', '>=', start_date)\
+        .where('date', '<=', end_date)\
+        .order_by('date')\
+        .stream()
+    
+    # Format data for the graph
+    data = []
+    for item in health_data:
+        item_data = item.to_dict()
+        data.append({
+            'date': item_data['date'].strftime('%Y-%m-%d'),
+            'steps': item_data.get('steps', 0),
+            'calories': item_data.get('calories', 0),
+            'sleep_hours': item_data.get('sleep_hours', 0)
+        })
     
     return jsonify(data)
 

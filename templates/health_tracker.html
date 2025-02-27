@@ -1,4 +1,6 @@
 {% extends "base.html" %} {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <div class="p-10">
   <h1 class="mb-8 text-3xl font-bold text-orange-600">Health Tracker</h1>
 
@@ -91,7 +93,14 @@
         <p class="text-gray-600">No health data available.</p>
         {% endif %}
       </div>
-      <canvas id="healthChart"></canvas>
+      <div class="p-4 border border-orange-200 rounded-lg shadow-lg bg-accent">
+        <h2 class="mb-4 text-xl font-semibold text-orange-700">
+          Graphical Representation
+        </h2>
+        <div class="p-4" style="position: relative; height:400px;">
+          <canvas id="healthChart"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 

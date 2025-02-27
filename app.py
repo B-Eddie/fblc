@@ -363,12 +363,35 @@ def api_provider(provider_id):
     doc = db.collection('providers').document(provider_id).get()
     if doc.exists:
         provider_data = doc.to_dict()
+        
+        # Get coordinates using the cached geocoding function
+        @lru_cache(maxsize=100)
+        def geocode_address(address):
+            if not address:
+                return None
+            try:
+                geolocator = Nominatim(user_agent="health-app")
+                location = geolocator.geocode(address)
+                if location:
+                    return {
+                        'lat': location.latitude,
+                        'lng': location.longitude
+                    }
+                return None
+            except Exception as e:
+                print(f"Geocoding error: {e}")
+                return None
+
+        # Get coordinates for the provider's address
+        coordinates = geocode_address(provider_data.get('address'))
+
         return jsonify({
             'id': doc.id,
             'name': provider_data.get('name'),
             'specialty': provider_data.get('specialty'),
             'address': provider_data.get('address'),
-            'phone': provider_data.get('phone')
+            'phone': provider_data.get('phone'),
+            'coordinates': coordinates  # Add coordinates to response
         })
     return jsonify({'error': 'Provider not found'}), 404
 

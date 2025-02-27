@@ -159,6 +159,13 @@
         lng: -122.4194,
       };
 
+      filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const specialty = button.id.replace("filter", "");
+          fetchProviders(specialty === "All" ? null : specialty);
+        });
+      });
+
       // Get user's location and fetch providers
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(

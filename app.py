@@ -422,7 +422,14 @@ def add_business():
 @app.route('/api/providers')
 @login_required
 def api_providers():
-    providers = db.collection('providers').where('verified', '==', True).stream()
+    specialty = request.args.get('specialty', None)
+    query = db.collection('providers').where('verified', '==', True)
+    
+    if specialty:
+        query = query.where('specialty', '==', specialty)
+    
+    providers = query.stream()
+    
     # Get user's address from their profile
     user_lat = request.args.get('lat')
     user_lng = request.args.get('lng')
@@ -449,7 +456,7 @@ def api_providers():
         'distance': round(geodesic(user_coords, geocode_address(doc.to_dict().get('address', ''))).kilometers, 1) if user_coords and geocode_address(doc.to_dict().get('address', '')) else None,
         'address': doc.to_dict()['address'],
     } for doc in providers]
-    print(provider_list)
+    
     return jsonify(provider_list)
 
 @app.route('/api/provider/<provider_id>')

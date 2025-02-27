@@ -10,6 +10,9 @@ import requests
 from flask_wtf.csrf import CSRFProtect
 from flask_wtf import FlaskForm
 from dotenv import load_dotenv
+from geopy.geocoders import Nominatim
+from geopy.distance import geodesic
+from functools import lru_cache
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key')
@@ -325,11 +328,31 @@ def add_business():
 @login_required
 def api_providers():
     providers = db.collection('providers').where('verified', '==', True).stream()
+    # Get user's address from their profile
+    user_lat = request.args.get('lat')
+    user_lng = request.args.get('lng')
+    user_coords = (float(user_lat), float(user_lng)) if user_lat and user_lng else None
+    
+    # Use lru_cache to avoid repeated geocoding for the same address
+    @lru_cache(maxsize=100)
+    def geocode_address(address):
+        if not address:
+            return None
+        try:
+            geolocator = Nominatim(user_agent="health-app")
+            location = geolocator.geocode(address)
+            if location:
+                return (location.latitude, location.longitude)
+            return None
+        except:
+            return None
+    
     provider_list = [{
         'id': doc.id,
         'name': doc.to_dict()['name'],
         'specialty': doc.to_dict()['specialty'],
-        'distance': 0  # You would calculate this based on user's location
+        'distance': round(geodesic(user_coords, geocode_address(doc.to_dict().get('address', ''))).kilometers, 1) if user_coords and geocode_address(doc.to_dict().get('address', '')) else None,
+        'address': doc.to_dict()['address'],
     } for doc in providers]
     print(provider_list)
     return jsonify(provider_list)

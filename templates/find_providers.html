@@ -1,5 +1,4 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <div class="p-10">
   <h1 class="mb-8 text-3xl font-bold text-orange-600">
     Find Healthcare Providers
@@ -148,71 +147,113 @@
       const closeModal = document.getElementById("closeModal");
       const bookingForm = document.getElementById("bookingForm");
 
+      // Initialize HERE platform globally
+      const platform = new H.service.Platform({
+        apikey: "lUFTE1skWuIcrj_s0wCZbbM2KWcgT2JnJcKGWHFi4WA",
+      });
+
       let providers = [];
+      let userLocation = {
+        lat: 37.7749,
+        lng: -122.4194,
+      };
 
-      // Fetch providers
-      fetch("/api/providers")
-        .then((response) => response.json())
-        .then((data) => {
-          providers = data;
-          renderProviders(providers);
-        });
+      // Get user's location and fetch providers
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            userLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            fetchProviders();
+          },
+          (error) => {
+            console.warn("Geolocation error:", error);
+            fetchProviders();
+          }
+        );
+      } else {
+        fetchProviders();
+      }
 
-      // Filter providers
-      filterButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          filterButtons.forEach((btn) =>
-            btn.classList.remove("bg-orange-500", "text-black")
-          );
-          filterButtons.forEach((btn) =>
-            btn.classList.add("bg-orange-100", "text-orange-800")
-          );
-          button.classList.remove("bg-orange-100", "text-orange-800");
-          button.classList.add("bg-orange-500", "text-black");
-          const specialty = button.id.replace("filter", "");
-          const filteredProviders =
-            specialty === "All"
-              ? providers
-              : providers.filter(
-                  (provider) => provider.specialty === specialty
-                );
-          renderProviders(filteredProviders);
-        });
-      });
+      function fetchProviders() {
+        fetch(`/api/providers?lat=${userLocation.lat}&lng=${userLocation.lng}`)
+          .then((response) => response.json())
+          .then((data) => {
+            providers = data;
+            renderProviders(providers);
+          })
+          .catch((error) => console.error("Error:", error));
+      }
 
-      // Sort providers by distance
-      sortDistance.addEventListener("change", () => {
-        const sortedProviders = [...providers].sort((a, b) => {
-          return sortDistance.value === "asc"
-            ? a.distance - b.distance
-            : b.distance - a.distance;
-        });
-        renderProviders(sortedProviders);
-      });
+      function initializeProviderMap(mapDivId, address) {
+        const defaultLayers = platform.createDefaultLayers();
+        const providerMap = new H.Map(
+          document.getElementById(mapDivId),
+          defaultLayers.vector.normal.map,
+          {
+            zoom: 15,
+            pixelRatio: window.devicePixelRatio || 1,
+            center: { lat: userLocation.lat, lng: userLocation.lng },
+          }
+        );
 
-      // Render provider cards
+        const behavior = new H.mapevents.Behavior(
+          new H.mapevents.MapEvents(providerMap)
+        );
+
+        const geocoder = platform.getSearchService();
+        geocoder.geocode(
+          {
+            q: address,
+            at: `${userLocation.lat},${userLocation.lng}`,
+          },
+          (result) => {
+            if (result.items.length > 0) {
+              const coords = result.items[0].position;
+              providerMap.setCenter({ lat: coords.lat, lng: coords.lng });
+              const marker = new H.map.Marker({
+                lat: coords.lat,
+                lng: coords.lng,
+              });
+              providerMap.addObject(marker);
+            }
+          },
+          (error) => console.error("Geocoding error:", error)
+        );
+
+        window.addEventListener("resize", () =>
+          providerMap.getViewPort().resize()
+        );
+      }
+
       function renderProviders(providersToRender) {
         providerList.innerHTML = "";
         providersToRender.forEach((provider) => {
           const card = document.createElement("div");
           card.className =
-            "bg-accent shadow-lg rounded-lg border border-orange-200 overflow-hidden transition duration-300 transform hover:scale-105";
+            "bg-white shadow-lg rounded-lg border border-orange-200 overflow-hidden transition duration-300 transform hover:scale-105";
 
-          // Create a unique ID for each provider's map
           const mapDivId = `map-${provider.id}`;
+          const distance = provider.distance
+            ? `${provider.distance.toFixed(1)} miles away`
+            : "Distance calculating...";
 
           card.innerHTML = `
             <div id="${mapDivId}" class="w-full h-48"></div>
             <div class="p-6">
               <h3 class="mb-2 text-lg font-semibold text-orange-600">${provider.name}</h3>
               <p class="mb-2 text-gray-600">${provider.specialty}</p>
-              <p class="mb-4 text-gray-600">${provider.distance} miles away</p>
-              <button class="px-4 py-2 font-bold text-black transition duration-300 bg-orange-500 rounded-full hover:bg-orange-600 book-appointment" data-id="${provider.id}">Book Appointment</button>
+              <p class="mb-2 text-gray-600">${provider.address}</p>
+              <p class="mb-4 text-gray-600">${distance}</p>
+              <button class="px-4 py-2 font-bold text-white transition duration-300 bg-orange-500 rounded-full hover:bg-orange-600 book-appointment" data-id="${provider.id}">
+                Book Appointment
+              </button>
             </div>
           `;
-          providerList.appendChild(card);
 
-          // Initialize map for this provider
+          providerList.appendChild(card);
           initializeProviderMap(mapDivId, provider.address);
         });
 
@@ -224,61 +265,6 @@
           });
         });
       }
-
-      // Initialize maps for provider cards
-      function initializeProviderMap(mapDivId, address) {
-        const defaultLayers = platform.createDefaultLayers();
-        const providerMap = new H.Map(
-          document.getElementById(mapDivId),
-          defaultLayers.vector.normal.map,
-          {
-            zoom: 15,
-            pixelRatio: window.devicePixelRatio || 1,
-          }
-        );
-
-        // Enable map interactions (optional for card views)
-        const behavior = new H.mapevents.Behavior(
-          new H.mapevents.MapEvents(providerMap)
-        );
-
-        // Geocode the address and center the map.
-        // A location hint ("at") is provided so that only the street address is needed from the user.
-        const geocoder = platform.getSearchService();
-        geocoder.geocode(
-          {
-            q: address,  // e.g., "1330 Montclair Dr"
-            at: "37.7749,-122.4194" // Replace with coordinates relevant to your area
-          },
-          (result) => {
-            if (result.items.length > 0) {
-              const coords = result.items[0].position;
-              providerMap.setCenter({ lat: coords.lat, lng: coords.lng });
-
-              // Add a marker
-              const marker = new H.map.Marker({ lat: coords.lat, lng: coords.lng });
-              providerMap.addObject(marker);
-            } else {
-              console.warn("No results found for the given address.");
-            }
-          },
-          (error) => {
-            console.error("Geocoding error:", error);
-          }
-        );
-
-        // Make map responsive
-        window.addEventListener("resize", () =>
-          providerMap.getViewPort().resize()
-        );
-      }
-
-      // Initialize HERE Map
-      const platform = new H.service.Platform({
-        apikey: "lUFTE1skWuIcrj_s0wCZbbM2KWcgT2JnJcKGWHFi4WA",
-      });
-
-      let map = null;
 
       // Open booking modal and initialize modal map
       function openBookingModal(providerId) {
@@ -322,7 +308,7 @@
             geocoder.geocode(
               {
                 q: provider.address,
-                at: "37.7749,-122.4194" // Replace with coordinates relevant to your area
+                at: "37.7749,-122.4194", // Replace with coordinates relevant to your area
               },
               (result) => {
                 if (result.items.length > 0) {
@@ -337,7 +323,9 @@
                   map.removeObjects(map.getObjects()); // Clear existing markers
                   map.addObject(marker);
                 } else {
-                  console.warn("No results found for the given address in modal.");
+                  console.warn(
+                    "No results found for the given address in modal."
+                  );
                 }
               },
               (error) => {

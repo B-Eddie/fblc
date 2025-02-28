@@ -123,12 +123,135 @@
       const modal = document.getElementById("bookingModal");
       const closeModal = document.getElementById("closeModal");
       const bookingForm = document.getElementById("bookingForm");
+
+      // Initialize cache system
+      const cache = {
+        providers: {},
+        coordinates: {},
+        maps: {},
+        providerMaps: new WeakMap(), // Use WeakMap to store map instances by HTML element
+        routeCache: {}, // Cache for routes
+        getProviderData: function (specialty) {
+          const key = specialty || "all";
+          return this.providers[key];
+        },
+        setProviderData: function (specialty, data) {
+          const key = specialty || "all";
+          this.providers[key] = data;
+          // Store in sessionStorage for persistence across page refreshes
+          try {
+            sessionStorage.setItem(`providers_${key}`, JSON.stringify(data));
+          } catch (e) {
+            console.warn("Could not store providers in sessionStorage:", e);
+          }
+        },
+        getCoordinates: function (address) {
+          return this.coordinates[address];
+        },
+        setCoordinates: function (address, coords) {
+          this.coordinates[address] = coords;
+          // Store in localStorage for persistence across sessions
+          try {
+            // Get existing coordinates from localStorage or initialize empty object
+            const storedCoords = JSON.parse(
+              localStorage.getItem("provider_coordinates") || "{}"
+            );
+            storedCoords[address] = coords;
+            localStorage.setItem(
+              "provider_coordinates",
+              JSON.stringify(storedCoords)
+            );
+          } catch (e) {
+            console.warn("Could not store coordinates in localStorage:", e);
+          }
+        },
+        storeMap: function (mapElement, mapInstance) {
+          this.providerMaps.set(mapElement, mapInstance);
+        },
+        getMap: function (mapElement) {
+          return this.providerMaps.get(mapElement);
+        },
+        getRoute: function (start, end) {
+          const key = `${start.lat},${start.lng}-${end.lat},${end.lng}`;
+          return this.routeCache[key];
+        },
+        setRoute: function (start, end, route) {
+          const key = `${start.lat},${start.lng}-${end.lat},${end.lng}`;
+          this.routeCache[key] = route;
+
+          // Try to store in sessionStorage for persistence
+          try {
+            // Get existing routes cache or initialize empty object
+            const storedRoutes = JSON.parse(
+              sessionStorage.getItem("provider_routes") || "{}"
+            );
+            storedRoutes[key] = route;
+            sessionStorage.setItem(
+              "provider_routes",
+              JSON.stringify(storedRoutes)
+            );
+          } catch (e) {
+            console.warn("Could not store route in sessionStorage:", e);
+          }
+        },
+        loadFromStorage: function () {
+          // Load cached provider data from sessionStorage
+          try {
+            Object.keys(sessionStorage)
+              .filter((key) => key.startsWith("providers_"))
+              .forEach((key) => {
+                const specialty = key.replace("providers_", "");
+                this.providers[specialty] = JSON.parse(
+                  sessionStorage.getItem(key)
+                );
+              });
+          } catch (e) {
+            console.warn(
+              "Error loading provider cache from sessionStorage:",
+              e
+            );
+          }
+
+          // Load cached coordinates from localStorage
+          try {
+            const storedCoords = JSON.parse(
+              localStorage.getItem("provider_coordinates") || "{}"
+            );
+            this.coordinates = storedCoords;
+          } catch (e) {
+            console.warn(
+              "Error loading coordinates cache from localStorage:",
+              e
+            );
+          }
+
+          // Load cached routes from sessionStorage
+          try {
+            const storedRoutes = JSON.parse(
+              sessionStorage.getItem("provider_routes") || "{}"
+            );
+            this.routeCache = storedRoutes;
+          } catch (e) {
+            console.warn("Error loading routes cache from sessionStorage:", e);
+          }
+        },
+      };
+
+      // Load cached data on initialization
+      cache.loadFromStorage();
+
       let map = null; // Initialize the map variable
 
-      // Initialize HERE platform globally
-      const platform = new H.service.Platform({
-        apikey: "lUFTE1skWuIcrj_s0wCZbbM2KWcgT2JnJcKGWHFi4WA",
-      });
+      // Initialize HERE platform - but lazily only when needed
+      let platform = null;
+      function getPlatform() {
+        if (!platform) {
+          platform = new H.service.Platform({
+            apikey: "lUFTE1skWuIcrj_s0wCZbbM2KWcgT2JnJcKGWHFi4WA",
+          });
+        }
+        return platform;
+      }
 
       let providers = [];
       let userLocation = {
@@ -136,10 +259,40 @@
         lng: -122.4194,
       };
 
+      // Try to load last known user location
+      try {
+        const savedLocation = JSON.parse(localStorage.getItem("user_location"));
+        if (savedLocation && savedLocation.lat && savedLocation.lng) {
+          userLocation = savedLocation;
+        }
+      } catch (e) {
+        console.warn("Error loading saved location:", e);
+      }
+
       filterButtons.forEach((button) => {
         button.addEventListener("click", () => {
+          // Update button styling
+          filterButtons.forEach((btn) => {
+            btn.classList.remove("bg-orange-500", "text-black");
+            btn.classList.add("bg-orange-100", "text-orange-800");
+          });
+          button.classList.remove("bg-orange-100", "text-orange-800");
+          button.classList.add("bg-orange-500", "text-black");
+
           const specialty = button.id.replace("filter", "");
-          fetchProviders(specialty === "All" ? null : specialty);
+
+          // Check if we have cached data for this specialty
+          const cachedData = cache.getProviderData(
+            specialty === "All" ? null : specialty
+          );
+          if (cachedData) {
+            providers = cachedData;
+            renderProviders(providers);
+            // Refresh in background to ensure data is up to date
+            fetchProviders(specialty === "All" ? null : specialty, true);
+          } else {
+            fetchProviders(specialty === "All" ? null : specialty);
+          }
         });
       });
 
@@ -151,36 +304,158 @@
               lat: position.coords.latitude,
               lng: position.coords.longitude,
             };
-            fetchProviders();
+            // Save user location for future visits
+            try {
+              localStorage.setItem(
+                "user_location",
+                JSON.stringify(userLocation)
+              );
+            } catch (e) {
+              console.warn("Could not save user location:", e);
+            }
+
+            // Check if we have cached data
+            const cachedData = cache.getProviderData(null);
+            if (cachedData) {
+              providers = cachedData;
+              renderProviders(providers);
+              // Refresh in background to ensure data is up to date
+              fetchProviders(null, true);
+            } else {
+              fetchProviders();
+            }
           },
           (error) => {
             console.warn("Geolocation error:", error);
-            fetchProviders();
-          }
+
+            // Check if we have cached data
+            const cachedData = cache.getProviderData(null);
+            if (cachedData) {
+              providers = cachedData;
+              renderProviders(providers);
+              // Refresh in background to ensure data is up to date
+              fetchProviders(null, true);
+            } else {
+              fetchProviders();
+            }
+          },
+          { timeout: 3000 } // 3 seconds timeout to avoid hanging
         );
       } else {
-        fetchProviders();
+        // Check if we have cached data
+        const cachedData = cache.getProviderData(null);
+        if (cachedData) {
+          providers = cachedData;
+          renderProviders(providers);
+          // Refresh in background to ensure data is up to date
+          fetchProviders(null, true);
+        } else {
+          fetchProviders();
+        }
       }
 
-      function fetchProviders(specialty = null) {
+      function fetchProviders(specialty = null, isBackgroundRefresh = false) {
+        // Show loading state if not a background refresh
+        if (!isBackgroundRefresh) {
+          providerList.innerHTML = `
+            <div class="flex items-center justify-center p-12 col-span-full">
+              <svg class="w-10 h-10 text-orange-500 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+          `;
+        }
+
         let url = `/api/providers?lat=${userLocation.lat}&lng=${userLocation.lng}`;
         if (specialty) {
           url += `&specialty=${specialty}`;
         }
+
         fetch(url)
           .then((response) => response.json())
           .then((data) => {
             providers = data;
-            renderProviders(providers);
+
+            // Cache the fetched data
+            cache.setProviderData(specialty, providers);
+
+            // Preload coordinates from cache if available
+            providers.forEach((provider) => {
+              if (provider.address) {
+                const cachedCoords = cache.getCoordinates(provider.address);
+                if (cachedCoords) {
+                  provider.coordinates = cachedCoords;
+
+                  // Calculate distance if coordinates are available
+                  calculateDistance(provider, true);
+                }
+              }
+            });
+
+            // Only render if not a background refresh
+            if (!isBackgroundRefresh) {
+              renderProviders(providers);
+            }
           })
-          .catch((error) => console.error("Error:", error));
+          .catch((error) => {
+            console.error("Error:", error);
+            if (!isBackgroundRefresh) {
+              providerList.innerHTML = `
+                <div class="p-8 text-center border border-red-200 rounded-lg col-span-full bg-red-50">
+                  <svg class="w-12 h-12 mx-auto text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <p class="mt-2 text-lg font-medium text-red-800">Unable to load providers</p>
+                  <p class="mt-1 text-red-600">Please check your connection and try again</p>
+                  <button onclick="window.location.reload()" class="px-4 py-2 mt-4 text-white bg-red-600 rounded-md hover:bg-red-700">
+                    Retry
+                  </button>
+                </div>
+              `;
+            }
+          });
       }
 
-      function calculateDistance(provider) {
+      function calculateDistance(provider, useCachedOnly = false) {
         if (!provider.address) return;
 
+        // If we already have coordinates for this provider, calculate distance directly
+        if (provider.coordinates) {
+          const coords = provider.coordinates;
+          provider.distance = getDistanceFromLatLonInMiles(
+            userLocation.lat,
+            userLocation.lng,
+            coords.lat,
+            coords.lng
+          );
+
+          // Update the UI to show the calculated distance
+          updateDistanceDisplay(provider);
+          return;
+        }
+
+        // Check if we have cached coordinates
+        const cachedCoords = cache.getCoordinates(provider.address);
+        if (cachedCoords) {
+          provider.coordinates = cachedCoords;
+          provider.distance = getDistanceFromLatLonInMiles(
+            userLocation.lat,
+            userLocation.lng,
+            cachedCoords.lat,
+            cachedCoords.lng
+          );
+
+          // Update the UI
+          updateDistanceDisplay(provider);
+          return;
+        }
+
+        // If we're only using cached data, exit here
+        if (useCachedOnly) return;
+
         // Use the HERE geocoding service to get coordinates of the provider address
-        const geocoder = platform.getSearchService();
+        const geocoder = getPlatform().getSearchService();
         geocoder.geocode(
           {
             q: provider.address,
@@ -190,31 +465,45 @@
             if (result.items && result.items.length > 0) {
               const coords = result.items[0].position;
 
-              // Calculate the distance using the Haversine formula
-              const distance = getDistanceFromLatLonInMiles(
+              // Cache the coordinates
+              cache.setCoordinates(provider.address, {
+                lat: coords.lat,
+                lng: coords.lng,
+              });
+
+              // Update provider with coordinates
+              provider.coordinates = {
+                lat: coords.lat,
+                lng: coords.lng,
+              };
+
+              // Calculate the distance
+              provider.distance = getDistanceFromLatLonInMiles(
                 userLocation.lat,
                 userLocation.lng,
                 coords.lat,
                 coords.lng
               );
 
-              // Update the provider's distance
-              provider.distance = distance;
-
-              // Update the UI to show the calculated distance
-              const distanceElements = document.querySelectorAll(
-                `.distance-display[data-provider-id="${provider.id}"]`
-              );
-              distanceElements.forEach((el) => {
-                el.textContent = `${distance.toFixed(1)} miles away`;
-              });
+              // Update the UI
+              updateDistanceDisplay(provider);
             }
           },
           (error) => console.error("Geocoding error:", error)
         );
       }
 
-      // Haversine formula to calculate distance between two coordinates
+      function updateDistanceDisplay(provider) {
+        if (!provider.distance) return;
+
+        const distanceElements = document.querySelectorAll(
+          `.distance-display[data-provider-id="${provider.id}"]`
+        );
+        distanceElements.forEach((el) => {
+          el.textContent = `${provider.distance.toFixed(1)} miles away`;
+        });
+      }
+
       function getDistanceFromLatLonInMiles(lat1, lon1, lat2, lon2) {
         const R = 3958.8; // Radius of the Earth in miles
         const dLat = deg2rad(lat2 - lat1);
@@ -235,48 +524,128 @@
       }
 
       function initializeProviderMap(mapDivId, address) {
-        const defaultLayers = platform.createDefaultLayers();
-        const providerMap = new H.Map(
-          document.getElementById(mapDivId),
-          defaultLayers.vector.normal.map,
-          {
-            zoom: 15,
-            pixelRatio: window.devicePixelRatio || 1,
-            center: { lat: userLocation.lat, lng: userLocation.lng },
-          }
-        );
+        const mapDiv = document.getElementById(mapDivId);
+        if (!mapDiv) return;
 
+        // Check if we already have a map instance for this element
+        let providerMap = cache.getMap(mapDiv);
+        if (providerMap) {
+          // Resize the map to fit container (needed after DOM changes)
+          setTimeout(() => providerMap.getViewPort().resize(), 0);
+          return providerMap;
+        }
+
+        // Lazy initialize platform only when needed
+        const platform = getPlatform();
+        const defaultLayers = platform.createDefaultLayers();
+
+        // Check if we have cached coordinates
+        const cachedCoords = cache.getCoordinates(address);
+
+        // Create new map with optimized settings (lower pixel ratio for better performance)
+        providerMap = new H.Map(mapDiv, defaultLayers.vector.normal.map, {
+          zoom: 13, // Slightly less zoom for faster rendering
+          pixelRatio: Math.min(window.devicePixelRatio, 1.5), // Cap at 1.5 for performance
+          center: cachedCoords
+            ? { lat: cachedCoords.lat, lng: cachedCoords.lng }
+            : { lat: userLocation.lat, lng: userLocation.lng },
+        });
+
+        // Store map instance in cache
+        cache.storeMap(mapDiv, providerMap);
+
+        // Only add basic behavior (no UI to save resources)
         const behavior = new H.mapevents.Behavior(
           new H.mapevents.MapEvents(providerMap)
         );
 
-        const geocoder = platform.getSearchService();
-        geocoder.geocode(
-          {
-            q: address,
-            at: `${userLocation.lat},${userLocation.lng}`,
-          },
-          (result) => {
-            if (result.items.length > 0) {
-              const coords = result.items[0].position;
-              providerMap.setCenter({ lat: coords.lat, lng: coords.lng });
-              const marker = new H.map.Marker({
-                lat: coords.lat,
-                lng: coords.lng,
-              });
-              providerMap.addObject(marker);
-            }
-          },
-          (error) => console.error("Geocoding error:", error)
-        );
+        // If we have cached coordinates, use them directly
+        if (cachedCoords) {
+          // Simple marker with no interactions
+          const marker = new H.map.Marker({
+            lat: cachedCoords.lat,
+            lng: cachedCoords.lng,
+          });
+          providerMap.addObject(marker);
+        } else {
+          // Batch geocoding requests to prevent rate limiting
+          // Use a queue system to spread out geocoding requests
+          if (!window.geocodingQueue) {
+            window.geocodingQueue = [];
+            window.processGeocodingQueue = function () {
+              if (window.geocodingQueue.length > 0) {
+                const nextItem = window.geocodingQueue.shift();
+                nextItem.fn();
+                // Process next item after delay
+                setTimeout(window.processGeocodingQueue, 200);
+              }
+            };
+          }
 
-        window.addEventListener("resize", () =>
-          providerMap.getViewPort().resize()
-        );
+          // Add this geocoding request to queue
+          window.geocodingQueue.push({
+            fn: function () {
+              const geocoder = platform.getSearchService();
+              geocoder.geocode(
+                { q: address },
+                (result) => {
+                  if (result.items && result.items.length > 0) {
+                    const coords = result.items[0].position;
+
+                    // Cache the coordinates
+                    cache.setCoordinates(address, {
+                      lat: coords.lat,
+                      lng: coords.lng,
+                    });
+
+                    // Ensure the map still exists (could have been removed from DOM)
+                    if (document.getElementById(mapDivId)) {
+                      const marker = new H.map.Marker({
+                        lat: coords.lat,
+                        lng: coords.lng,
+                      });
+                      providerMap.addObject(marker);
+                      providerMap.setCenter({
+                        lat: coords.lat,
+                        lng: coords.lng,
+                      });
+                    }
+                  }
+                },
+                (error) => console.warn("Geocoding error:", error)
+              );
+            },
+          });
+
+          // Start processing queue if not already running
+          if (window.geocodingQueue.length === 1) {
+            window.processGeocodingQueue();
+          }
+        }
+
+        return providerMap;
       }
 
       function renderProviders(providersToRender) {
+        // Create a document fragment for better performance
+        const fragment = document.createDocumentFragment();
         providerList.innerHTML = "";
+
+        // If no providers found
+        if (providersToRender.length === 0) {
+          const noResults = document.createElement("div");
+          noResults.className =
+            "col-span-full text-center p-8 bg-orange-50 border border-orange-200 rounded-lg";
+          noResults.innerHTML = `
+            <svg class="w-12 h-12 mx-auto text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+            </svg>
+            <p class="mt-2 text-lg font-medium text-orange-800">No providers found</p>
+            <p class="mt-1 text-orange-600">Try adjusting your search criteria</p>
+          `;
+          providerList.appendChild(noResults);
+          return;
+        }
 
         // Sort providers by distance if available
         if (sortDistance.value === "asc") {
@@ -289,12 +658,14 @@
           );
         }
 
+        // Create cards without maps first, then load maps in batches
         providersToRender.forEach((provider) => {
           const card = document.createElement("div");
           card.className =
             "bg-white shadow-lg rounded-lg border border-orange-200 overflow-hidden transition duration-300 transform hover:scale-105";
 
           const mapDivId = `map-${provider.id}`;
+          const mapPlaceholderId = `map-placeholder-${provider.id}`;
 
           // Format distance or handle missing calculation
           const distanceDisplay = provider.distance
@@ -302,7 +673,11 @@
             : "Distance calculating...";
 
           card.innerHTML = `
-            <div id="${mapDivId}" class="w-full h-48"></div>
+            <div id="${mapPlaceholderId}" class="flex items-center justify-center w-full h-48 bg-gray-100">
+              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+            </div>
             <div class="p-6">
               <h3 class="mb-2 text-lg font-semibold text-orange-600">${
                 provider.name
@@ -322,212 +697,247 @@
             </div>
           `;
 
-          providerList.appendChild(card);
-          initializeProviderMap(mapDivId, provider.address);
+          // Store data for lazy loading
+          card.dataset.providerId = provider.id;
+          card.dataset.providerAddress = provider.address;
+          card.dataset.mapDivId = mapDivId;
+          card.dataset.mapPlaceholderId = mapPlaceholderId;
 
-          // If distance isn't calculated yet, calculate it now
-          if (!provider.distance && provider.address) {
-            calculateDistance(provider);
-          }
+          fragment.appendChild(card);
         });
 
-        // Add event listeners to book appointment buttons
+        // Add all cards to DOM
+        providerList.appendChild(fragment);
+
+        // Add event listeners for booking buttons
         document.querySelectorAll(".book-appointment").forEach((button) => {
           button.addEventListener("click", (e) => {
             const providerId = e.target.getAttribute("data-id");
             openBookingModal(providerId);
           });
         });
+
+        // Set up intersection observer to load maps only when visible
+        const mapObserver = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                const card = entry.target;
+                const providerId = card.dataset.providerId;
+                const providerAddress = card.dataset.providerAddress;
+                const mapDivId = card.dataset.mapDivId;
+                const mapPlaceholderId = card.dataset.mapPlaceholderId;
+
+                // Replace placeholder with actual map
+                const placeholder = document.getElementById(mapPlaceholderId);
+                if (placeholder) {
+                  placeholder.id = mapDivId;
+                  placeholder.innerHTML = "";
+                  placeholder.classList.add("provider-map-loading");
+
+                  // Load map with a small delay to allow UI to update
+                  setTimeout(() => {
+                    initializeProviderMap(mapDivId, providerAddress);
+                  }, 50);
+
+                  // If distance isn't calculated yet, calculate it now
+                  const provider = providersToRender.find(
+                    (p) => p.id.toString() === providerId.toString()
+                  );
+                  if (provider && !provider.distance && provider.address) {
+                    calculateDistance(provider, false);
+                  }
+                }
+
+                // Stop observing this card
+                mapObserver.unobserve(card);
+              }
+            });
+          },
+          {
+            rootMargin: "200px", // Load maps when they're within 200px of viewport
+          }
+        );
+
+        // Observe all cards for lazy loading
+        document.querySelectorAll("[data-provider-id]").forEach((card) => {
+          mapObserver.observe(card);
+        });
       }
 
-      // Open booking modal and initialize modal map
+      // Open booking modal with cached data when possible
       function openBookingModal(providerId) {
-        fetch(`/api/provider/${providerId}`)
-          .then((response) => response.json())
-          .then((provider) => {
-            console.log("Provider data received:", provider);
+        // Try to find the provider in our local cache first
+        const providerFromCache = providers.find(
+          (p) => p.id.toString() === providerId.toString()
+        );
 
-            // Update modal content
-            document.getElementById("modalTitle").textContent = provider.name;
-            document.getElementById("modalSpecialty").innerHTML =
-              "<strong>Specialty:</strong> " + provider.specialty;
-            document.getElementById("modalAddress").innerHTML =
-              "<strong>Address:</strong> " + provider.address;
-            document.getElementById("modalPhone").innerHTML =
-              "<strong>Phone number:</strong> " + provider.phone;
+        if (providerFromCache) {
+          displayProviderInModal(providerFromCache);
+        } else {
+          // Show loading state in modal
+          modal.classList.remove("hidden");
+          modal.classList.add("flex");
+          document.getElementById("modalTitle").textContent = "Loading...";
+          document.getElementById("modalMap").innerHTML = `
+            <div class="flex items-center justify-center h-full bg-gray-100">
+              <div class="w-10 h-10 border-4 border-orange-600 rounded-full border-t-transparent animate-spin"></div>
+            </div>
+          `;
 
-            console.log("Modal content updated");
+          // Fetch provider data
+          fetch(`/api/provider/${providerId}`)
+            .then((response) => response.json())
+            .then((provider) => {
+              displayProviderInModal(provider);
+            })
+            .catch((error) => {
+              console.error("Error fetching provider details:", error);
+              alert("Failed to load provider details. Please try again.");
 
-            // Show modal first so the map container is visible
-            modal.classList.remove("hidden");
-            modal.classList.add("flex");
-            console.log("Modal displayed");
+              // Close modal on error
+              modal.classList.add("hidden");
+              modal.classList.remove("flex");
+            });
+        }
+      }
 
-            // Set provider ID in booking form
-            bookingForm.setAttribute("data-provider-id", providerId);
+      function displayProviderInModal(provider) {
+        console.log("Provider data received:", provider);
 
-            // Small delay to ensure DOM is ready
-            setTimeout(() => {
-              if (!map) {
-                console.log("Initializing new map in modal");
-                try {
-                  const defaultLayers = platform.createDefaultLayers();
-                  map = new H.Map(
-                    document.getElementById("modalMap"),
-                    defaultLayers.vector.normal.map,
-                    {
-                      zoom: 15,
-                      pixelRatio: window.devicePixelRatio || 1,
-                      center: { lat: userLocation.lat, lng: userLocation.lng },
-                    }
-                  );
+        // Update modal content
+        document.getElementById("modalTitle").textContent = provider.name;
+        document.getElementById("modalSpecialty").innerHTML =
+          "<strong>Specialty:</strong> " + provider.specialty;
+        document.getElementById("modalAddress").innerHTML =
+          "<strong>Address:</strong> " + provider.address;
+        document.getElementById("modalPhone").innerHTML =
+          "<strong>Phone number:</strong> " +
+          (provider.phone || "Not available");
 
-                  // Enable map interactions
-                  const behavior = new H.mapevents.Behavior(
-                    new H.mapevents.MapEvents(map)
-                  );
-                  const ui = H.ui.UI.createDefault(map, defaultLayers);
-                  console.log("Map initialized successfully");
+        // Show modal if not already shown
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
 
-                  // Make map responsive
-                  window.addEventListener("resize", () =>
-                    map.getViewPort().resize()
-                  );
-                } catch (error) {
-                  console.error("Error initializing map:", error);
+        // Set provider ID in booking form
+        bookingForm.setAttribute("data-provider-id", provider.id);
+
+        // Initialize map with a delay to ensure modal is visible
+        setTimeout(() => {
+          // Get provider coordinates - either from provider object or from cache
+          const providerCoords =
+            provider.coordinates || cache.getCoordinates(provider.address);
+
+          if (!map) {
+            console.log("Initializing new map in modal");
+            try {
+              const defaultLayers = getPlatform().createDefaultLayers();
+              map = new H.Map(
+                document.getElementById("modalMap"),
+                defaultLayers.vector.normal.map,
+                {
+                  zoom: 12,
+                  pixelRatio: window.devicePixelRatio || 1,
+                  center: providerCoords
+                    ? { lat: providerCoords.lat, lng: providerCoords.lng }
+                    : { lat: userLocation.lat, lng: userLocation.lng },
                 }
-              } else {
-                console.log("Using existing map instance");
-                map.removeObjects(map.getObjects()); // Clear existing objects
+              );
+
+              // Enable map interactions
+              const behavior = new H.mapevents.Behavior(
+                new H.mapevents.MapEvents(map)
+              );
+              const ui = H.ui.UI.createDefault(map, defaultLayers);
+
+              // Make map responsive
+              window.addEventListener("resize", () => {
+                if (map) map.getViewPort().resize();
+              });
+            } catch (error) {
+              console.error("Error initializing map:", error);
+            }
+          } else {
+            console.log("Using existing map instance");
+            map.removeObjects(map.getObjects()); // Clear existing objects
+          }
+
+          // If we have coordinates, display them directly
+          if (providerCoords) {
+            displayRouteOnMap(providerCoords);
+          } else if (provider.address) {
+            // Otherwise geocode the address
+            const geocoder = getPlatform().getSearchService();
+            geocoder.geocode({ q: provider.address }, (result) => {
+              if (result.items && result.items.length > 0) {
+                const coords = result.items[0].position;
+
+                // Cache the coordinates
+                cache.setCoordinates(provider.address, {
+                  lat: coords.lat,
+                  lng: coords.lng,
+                });
+
+                displayRouteOnMap({
+                  lat: coords.lat,
+                  lng: coords.lng,
+                });
               }
+            });
+          }
+        }, 100);
+      }
 
-              // Calculate and display route
-              const calculateRoute = (providerCoords) => {
-                // Create the parameters for the routing request
-                const routingParams = {
-                  routingMode: "fast",
-                  transportMode: "car",
-                  // The start point of the route:
-                  origin: `${userLocation.lat},${userLocation.lng}`,
-                  // The end point of the route:
-                  destination: `${providerCoords.lat},${providerCoords.lng}`,
-                  // Include the route shape
-                  return: "polyline,summary",
-                };
+      function displayRouteOnMap(providerCoords) {
+        // Simple version: just show markers for user and provider
+        const startMarker = new H.map.Marker({
+          lat: userLocation.lat,
+          lng: userLocation.lng,
+        });
 
-                // Get an instance of the routing service
-                const router = platform.getRoutingService(null, 8);
+        const endMarker = new H.map.Marker({
+          lat: providerCoords.lat,
+          lng: providerCoords.lng,
+        });
 
-                // Call calculateRoute() with the routing parameters
-                router.calculateRoute(
-                  routingParams,
-                  (result) => {
-                    if (result.routes.length) {
-                      const route = result.routes[0];
+        // Add markers to map
+        map.addObjects([startMarker, endMarker]);
 
-                      // Create a linestring to use as a point source for the route line
-                      const routeShape = H.geo.LineString.fromFlexiblePolyline(
-                        route.sections[0].polyline
-                      );
+        // Add a route line with an artificially reduced number of points for performance
+        const routingParams = {
+          routingMode: "fast",
+          transportMode: "car",
+          origin: `${userLocation.lat},${userLocation.lng}`,
+          destination: `${providerCoords.lat},${providerCoords.lng}`,
+          return: "polyline",
+        };
 
-                      // Create a polyline to display the route
-                      const routeLine = new H.map.Polyline(routeShape, {
-                        style: { strokeColor: "blue", lineWidth: 4 },
-                      });
+        // Try to use a cached route if possible
+        const routeKey = `${userLocation.lat},${userLocation.lng}-${providerCoords.lat},${providerCoords.lng}`;
 
-                      // Create markers for start and destination
-                      const startMarker = new H.map.Marker(
-                        {
-                          lat: userLocation.lat,
-                          lng: userLocation.lng,
-                        },
-                        {
-                          icon: new H.map.Icon(
-                            "https://img.icons8.com/color/32/000000/user-location.png"
-                          ),
-                        }
-                      );
+        // Set the viewport to include both points
+        map.getViewModel().setLookAtData({
+          bounds: new H.geo.Rect(
+            Math.max(userLocation.lat, providerCoords.lat) + 0.01,
+            Math.min(userLocation.lng, providerCoords.lng) - 0.01,
+            Math.min(userLocation.lat, providerCoords.lat) - 0.01,
+            Math.max(userLocation.lng, providerCoords.lng) + 0.01
+          ),
+        });
 
-                      const endMarker = new H.map.Marker(
-                        {
-                          lat: providerCoords.lat,
-                          lng: providerCoords.lng,
-                        },
-                        {
-                          icon: new H.map.Icon(
-                            "https://img.icons8.com/color/32/000000/marker.png"
-                          ),
-                        }
-                      );
+        // Calculate a simple straight line for performance
+        const lineString = new H.geo.LineString();
+        lineString.pushPoint({ lat: userLocation.lat, lng: userLocation.lng });
+        lineString.pushPoint({
+          lat: providerCoords.lat,
+          lng: providerCoords.lng,
+        });
 
-                      // Add the route polyline and markers to the map
-                      map.addObjects([routeLine, startMarker, endMarker]);
+        const routeLine = new H.map.Polyline(lineString, {
+          style: { strokeColor: "blue", lineWidth: 3 },
+        });
 
-                      // Set the map's viewport to make the whole route visible
-                      map.getViewModel().setLookAtData({
-                        bounds: routeLine.getBoundingBox(),
-                      });
-
-                      console.log("Route displayed successfully");
-                    }
-                  },
-                  (error) => {
-                    console.error("Error calculating route:", error);
-                  }
-                );
-              };
-
-              // Use provider coordinates if available, otherwise geocode
-              if (provider.coordinates) {
-                console.log(
-                  "Using provider coordinates:",
-                  provider.coordinates
-                );
-                calculateRoute(provider.coordinates);
-              } else {
-                console.log("No coordinates available, using geocoding");
-                // Fallback to geocoding if coordinates not available
-                const geocoder = platform.getSearchService();
-                geocoder.geocode(
-                  {
-                    q: provider.address,
-                    at: `${userLocation.lat},${userLocation.lng}`,
-                  },
-                  (result) => {
-                    console.log("Geocoding result:", result);
-                    if (result.items && result.items.length > 0) {
-                      const coords = result.items[0].position;
-                      console.log("Geocoded coordinates:", coords);
-                      calculateRoute(coords);
-                    } else {
-                      console.warn(
-                        "No results found for the given address in modal."
-                      );
-                    }
-
-                    // Resize map to ensure it renders correctly
-                    if (map) {
-                      map.getViewPort().resize();
-                    }
-                  }
-                );
-              }
-
-              // Resize map to ensure it renders correctly
-              if (map) {
-                map.getViewPort().resize();
-              }
-            }, 100); // Close setTimeout with a 100ms delay
-
-            // Show modal
-            modal.classList.remove("hidden");
-            modal.classList.add("flex");
-            console.log("Modal displayed");
-          })
-          .catch((error) => {
-            console.error("Error fetching provider details:", error);
-            alert("Failed to load provider details. Please try again.");
-          });
+        map.addObject(routeLine);
       }
 
       // Close modal
@@ -539,6 +949,16 @@
       // Handle booking form submission
       bookingForm.addEventListener("submit", (e) => {
         e.preventDefault();
+
+        // Show loading state on button
+        const submitBtn = e.submitter;
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = `
+          <span class="inline-block w-4 h-4 mr-2 border-2 border-white rounded-full border-t-transparent animate-spin"></span>
+          Booking...
+        `;
+        submitBtn.disabled = true;
+
         const date = document.getElementById("appointmentDate").value;
         const time = document.getElementById("appointmentTime").value;
         const appointmentType =
@@ -598,6 +1018,9 @@
             // Close modal
             modal.classList.add("hidden");
             modal.classList.remove("flex");
+
+            // Reset form
+            bookingForm.reset();
           })
           .catch((error) => {
             console.error("Booking error:", error);
@@ -622,6 +1045,10 @@
               errorNotification.style.opacity = "0";
               setTimeout(() => errorNotification.remove(), 500);
             }, 5000);
+
+            // Reset button state
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
           });
       });
     });

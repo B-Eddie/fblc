@@ -772,5 +772,150 @@ def update_appointment_status(appointment_id):
         print(f"Error updating appointment status: {e}")
         return jsonify({'error': 'An error occurred while updating the appointment'}), 500
 
+@app.route('/api/submit-review', methods=['POST'])
+@login_required
+def submit_review():
+    """API endpoint to submit a review for a provider"""
+    try:
+        # Get data from request
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Extract request data
+        provider_id = data.get('provider_id')
+        rating = data.get('rating')
+        review_text = data.get('review_text', '')
+        
+        # Validate required fields
+        if not provider_id or not rating:
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        if not isinstance(rating, int) or rating < 1 or rating > 5:
+            return jsonify({'error': 'Rating must be between 1 and 5'}), 400
+        
+        # Get Firestore client
+        db = firestore.client()
+        
+        # Check if provider exists
+        provider_ref = db.collection('providers').document(provider_id)
+        provider_doc = provider_ref.get()
+        
+        if not provider_doc.exists:
+            return jsonify({'error': 'Provider not found'}), 404
+        
+        # Check if user already reviewed this provider
+        existing_reviews = list(db.collection('reviews')
+                               .where('user_id', '==', current_user.id)
+                               .where('provider_id', '==', provider_id)
+                               .limit(1)
+                               .stream())
+        
+        # Allow users to leave multiple reviews for testing purposes
+        # If in production, uncomment this check:
+        # if existing_reviews:
+        #     return jsonify({'error': 'You have already reviewed this provider'}), 400
+        
+        # Create new review
+        new_review = {
+            'user_id': current_user.id,
+            'user_name': getattr(current_user, 'display_name', current_user.email.split('@')[0]),
+            'provider_id': provider_id,
+            'rating': rating,
+            'text': review_text,
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        
+        # Add review to Firestore
+        review_ref = db.collection('reviews').document()
+        review_ref.set(new_review)
+        
+        # Update provider's average rating
+        provider_data = provider_doc.to_dict()
+        current_rating = provider_data.get('average_rating', 0)
+        current_count = provider_data.get('review_count', 0)
+        
+        # Calculate new average
+        new_count = current_count + 1
+        if current_count == 0:
+            new_average = rating
+        else:
+            new_average = ((current_rating * current_count) + rating) / new_count
+        
+        # Update provider document
+        provider_ref.update({
+            'average_rating': new_average,
+            'review_count': new_count
+        })
+        
+        return jsonify({
+            'success': True,
+            'message': 'Review submitted successfully',
+            'review_id': review_ref.id
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error submitting review: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/provider-ratings/<provider_id>')
+@login_required
+def get_provider_ratings(provider_id):
+    """Get the rating summary for a provider"""
+    try:
+        # Check if provider exists
+        provider_ref = db.collection('providers').document(provider_id)
+        provider = provider_ref.get()
+        
+        if not provider.exists:
+            return jsonify({'error': 'Provider not found'}), 404
+            
+        provider_data = provider.to_dict()
+        
+        # Get ratings data
+        average_rating = provider_data.get('average_rating', 0)
+        review_count = provider_data.get('review_count', 0)
+        
+        return jsonify({
+            'provider_id': provider_id,
+            'average_rating': average_rating,
+            'review_count': review_count
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting provider ratings: {str(e)}")
+        return jsonify({'error': 'An error occurred while fetching ratings'}), 500
+
+@app.route('/api/provider-reviews/<provider_id>')
+@login_required
+def get_provider_reviews(provider_id):
+    """Get all reviews for a provider"""
+    try:
+        # Check if provider exists
+        provider_ref = db.collection('providers').document(provider_id)
+        if not provider_ref.get().exists:
+            return jsonify({'error': 'Provider not found'}), 404
+        
+        # Get reviews from the reviews collection
+        reviews_query = db.collection('reviews').where('provider_id', '==', provider_id).stream()
+        
+        reviews = []
+        for review in reviews_query:
+            review_data = review.to_dict()
+            review_data['id'] = review.id
+            
+            # Format timestamp if needed
+            if 'created_at' in review_data and hasattr(review_data['created_at'], 'seconds'):
+                # Convert Firestore timestamp to ISO format string
+                review_data['created_at'] = {
+                    'seconds': review_data['created_at'].seconds,
+                    'nanoseconds': review_data['created_at'].nanoseconds
+                }
+            
+            reviews.append(review_data)
+        return jsonify(reviews)
+    except Exception as e:
+        app.logger.error(f"Error getting provider reviews: {str(e)}")
+        return jsonify({'error': 'An error occurred while fetching reviews'}), 500
+
 if __name__ == '__main__':
     app.run(debug=False)

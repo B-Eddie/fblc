@@ -115,6 +115,163 @@
     </div>
   </div>
 
+  <!-- Add this modal at the end of your body, just before the closing div -->
+  <div
+    id="reviewsModal"
+    class="fixed inset-0 items-center justify-center hidden bg-gray-600 bg-opacity-50"
+  >
+    <div class="w-full max-w-lg p-6 bg-white rounded-lg shadow-xl">
+      <div class="flex items-center justify-between mb-4">
+        <h2
+          id="reviewsModalTitle"
+          class="text-xl font-bold text-orange-600"
+        ></h2>
+        <div class="flex items-center">
+          <span class="mr-2">Sort by:</span>
+          <select
+            id="reviewSort"
+            class="p-1 text-sm border border-orange-300 rounded-md bg-orange-50"
+          >
+            <option value="recent">Most Recent</option>
+            <option value="highest">Highest Rating</option>
+            <option value="lowest">Lowest Rating</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <div class="flex items-center mb-2">
+          <div class="flex items-center mr-3">
+            <span id="modalRating" class="text-xl font-bold text-orange-600"
+              >--</span
+            >
+            <div
+              id="modalStarsContainer"
+              class="flex ml-1 text-orange-400"
+            ></div>
+          </div>
+          <span id="modalReviewCount" class="text-sm text-gray-600"
+            >0 reviews</span
+          >
+        </div>
+      </div>
+
+      <div id="reviewsList" class="mb-6 overflow-y-auto max-h-96">
+        <!-- Reviews will be dynamically inserted here -->
+        <div class="flex items-center justify-center p-8 text-gray-500">
+          <span>Loading reviews...</span>
+        </div>
+      </div>
+
+      <form id="reviewForm" class="pt-4 border-t border-gray-200">
+        <h3 class="mb-3 text-lg font-medium text-gray-800">Add Your Review</h3>
+        <div class="flex items-center mb-4">
+          <span class="mr-3">Your Rating:</span>
+          <div class="flex text-gray-300" id="ratingSelector">
+            <svg
+              class="w-6 h-6 cursor-pointer rating-star hover:text-orange-400"
+              data-rating="1"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <svg
+              class="w-6 h-6 cursor-pointer rating-star hover:text-orange-400"
+              data-rating="2"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <svg
+              class="w-6 h-6 cursor-pointer rating-star hover:text-orange-400"
+              data-rating="3"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <svg
+              class="w-6 h-6 cursor-pointer rating-star hover:text-orange-400"
+              data-rating="4"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <svg
+              class="w-6 h-6 cursor-pointer rating-star hover:text-orange-400"
+              data-rating="5"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </div>
+          <input type="hidden" id="selectedRating" value="0" />
+        </div>
+
+        <div class="mb-4">
+          <label
+            for="reviewText"
+            class="block mb-2 text-sm font-medium text-gray-700"
+          >
+            Your Review
+          </label>
+          <textarea
+            id="reviewText"
+            rows="3"
+            class="block w-full px-3 py-2 border border-orange-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500"
+            placeholder="Share your experience with this provider"
+          ></textarea>
+        </div>
+
+        <div class="flex justify-end space-x-4">
+          <button
+            type="button"
+            id="closeReviewsModal"
+            class="px-4 py-2 font-bold text-gray-800 transition duration-300 bg-gray-300 rounded-full hover:bg-gray-400"
+          >
+            Close
+          </button>
+          <button
+            type="submit"
+            id="submitReview"
+            class="px-4 py-2 font-bold text-white transition duration-300 bg-orange-500 rounded-full hover:bg-orange-600"
+          >
+            Submit Review
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const providerList = document.getElementById("providerList");
@@ -358,13 +515,13 @@
         // Show loading state if not a background refresh
         if (!isBackgroundRefresh) {
           providerList.innerHTML = `
-            <div class="flex items-center justify-center p-12 col-span-full">
-              <svg class="w-10 h-10 text-orange-500 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            </div>
-          `;
+                  <div class="flex items-center justify-center p-12 col-span-full">
+                    <svg class="w-10 h-10 text-orange-500 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                `;
         }
 
         let url = `/api/providers?lat=${userLocation.lat}&lng=${userLocation.lng}`;
@@ -402,17 +559,17 @@
             console.error("Error:", error);
             if (!isBackgroundRefresh) {
               providerList.innerHTML = `
-                <div class="p-8 text-center border border-red-200 rounded-lg col-span-full bg-red-50">
-                  <svg class="w-12 h-12 mx-auto text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <p class="mt-2 text-lg font-medium text-red-800">Unable to load providers</p>
-                  <p class="mt-1 text-red-600">Please check your connection and try again</p>
-                  <button onclick="window.location.reload()" class="px-4 py-2 mt-4 text-white bg-red-600 rounded-md hover:bg-red-700">
-                    Retry
-                  </button>
-                </div>
-              `;
+                      <div class="p-8 text-center border border-red-200 rounded-lg col-span-full bg-red-50">
+                        <svg class="w-12 h-12 mx-auto text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <p class="mt-2 text-lg font-medium text-red-800">Unable to load providers</p>
+                        <p class="mt-1 text-red-600">Please check your connection and try again</p>
+                        <button onclick="window.location.reload()" class="px-4 py-2 mt-4 text-white bg-red-600 rounded-md hover:bg-red-700">
+                          Retry
+                        </button>
+                      </div>
+                    `;
             }
           });
       }
@@ -637,12 +794,12 @@
           noResults.className =
             "col-span-full text-center p-8 bg-orange-50 border border-orange-200 rounded-lg";
           noResults.innerHTML = `
-            <svg class="w-12 h-12 mx-auto text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
-            </svg>
-            <p class="mt-2 text-lg font-medium text-orange-800">No providers found</p>
-            <p class="mt-1 text-orange-600">Try adjusting your search criteria</p>
-          `;
+                  <svg class="w-12 h-12 mx-auto text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                  </svg>
+                  <p class="mt-2 text-lg font-medium text-orange-800">No providers found</p>
+                  <p class="mt-1 text-orange-600">Try adjusting your search criteria</p>
+                `;
           providerList.appendChild(noResults);
           return;
         }
@@ -673,29 +830,60 @@
             : "Distance calculating...";
 
           card.innerHTML = `
-            <div id="${mapPlaceholderId}" class="flex items-center justify-center w-full h-48 bg-gray-100">
-              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-            </div>
-            <div class="p-6">
-              <h3 class="mb-2 text-lg font-semibold text-orange-600">${
-                provider.name
-              }</h3>
-              <p class="mb-2 text-gray-600">${
-                provider.specialty || "General Practice"
-              }</p>
-              <p class="mb-2 text-gray-600">${provider.address}</p>
-              <p class="mb-4 text-gray-600 distance-display" data-provider-id="${
-                provider.id
-              }">${distanceDisplay}</p>
-              <button class="px-4 py-2 font-bold text-white transition duration-300 bg-orange-500 rounded-full hover:bg-orange-600 book-appointment" data-id="${
-                provider.id
-              }">
-                Book Appointment
-              </button>
-            </div>
-          `;
+                  <div id="${mapPlaceholderId}" class="flex items-center justify-center w-full h-48 bg-gray-100">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
+                  </div>
+                  <div class="p-6">
+                    <h3 class="mb-2 text-lg font-semibold text-orange-600">${
+                      provider.name
+                    }</h3>
+                    <p class="mb-2 text-gray-600">${
+                      provider.specialty || "General Practice"
+                    }</p>
+                    <p class="mb-2 text-gray-600">${provider.address}</p>
+                    <p class="mb-4 text-gray-600 distance-display" data-provider-id="${
+                      provider.id
+                    }">${distanceDisplay}</p>
+                    <div class="mb-4">
+                      <div class="flex items-center mb-2">
+                        <div class="flex items-center mr-2">
+                          <span class="text-lg font-bold text-orange-600 provider-rating" data-provider-id="${
+                            provider.id
+                          }">--</span>
+                          <div class="flex ml-1 text-orange-400 stars-container" data-provider-id="${
+                            provider.id
+                          }" data-rating="0">
+                            ${Array.from(
+                              { length: 5 },
+                              (_, i) => `
+                              <svg class="w-5 h-5 star" data-star-index="${
+                                i + 1
+                              }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                              </svg>
+                            `
+                            ).join("")}
+                          </div>
+                        </div>
+                        <span class="text-sm text-gray-600 review-count" data-provider-id="${
+                          provider.id
+                        }">0 reviews</span>
+                        <button class="ml-auto text-sm font-medium text-orange-600 hover:text-orange-800 view-reviews" data-id="${
+                          provider.id
+                        }">
+                          View Reviews
+                        </button>
+                      </div>
+                    </div>
+                    <button class="px-4 py-2 font-bold text-white transition duration-300 bg-orange-500 rounded-full hover:bg-orange-600 book-appointment" data-id="${
+                      provider.id
+                    }">
+                      Book Appointment
+                    </button>
+                  </div>
+                `;
 
           // Store data for lazy loading
           card.dataset.providerId = provider.id;
@@ -714,6 +902,14 @@
           button.addEventListener("click", (e) => {
             const providerId = e.target.getAttribute("data-id");
             openBookingModal(providerId);
+          });
+        });
+
+        // Add event listeners for review buttons
+        document.querySelectorAll(".view-reviews").forEach((button) => {
+          button.addEventListener("click", (e) => {
+            const providerId = e.target.getAttribute("data-id");
+            openReviewsModal(providerId);
           });
         });
 
@@ -763,6 +959,12 @@
         document.querySelectorAll("[data-provider-id]").forEach((card) => {
           mapObserver.observe(card);
         });
+
+        // Load ratings AFTER providers are rendered to the DOM
+        loadProviderRatings();
+
+        // Dispatch an event that providers were updated
+        document.dispatchEvent(new CustomEvent("providerListUpdated"));
       }
 
       // Open booking modal with cached data when possible
@@ -780,10 +982,10 @@
           modal.classList.add("flex");
           document.getElementById("modalTitle").textContent = "Loading...";
           document.getElementById("modalMap").innerHTML = `
-            <div class="flex items-center justify-center h-full bg-gray-100">
-              <div class="w-10 h-10 border-4 border-orange-600 rounded-full border-t-transparent animate-spin"></div>
-            </div>
-          `;
+                  <div class="flex items-center justify-center h-full bg-gray-100">
+                    <div class="w-10 h-10 border-4 border-orange-600 rounded-full border-t-transparent animate-spin"></div>
+                  </div>
+                `;
 
           // Fetch provider data
           fetch(`/api/provider/${providerId}`)
@@ -954,9 +1156,9 @@
         const submitBtn = e.submitter;
         const originalText = submitBtn.innerHTML;
         submitBtn.innerHTML = `
-          <span class="inline-block w-4 h-4 mr-2 border-2 border-white rounded-full border-t-transparent animate-spin"></span>
-          Booking...
-        `;
+                <span class="inline-block w-4 h-4 mr-2 border-2 border-white rounded-full border-t-transparent animate-spin"></span>
+                Booking...
+              `;
         submitBtn.disabled = true;
 
         const date = document.getElementById("appointmentDate").value;
@@ -996,16 +1198,16 @@
             notification.className =
               "fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-500";
             notification.innerHTML = `
-            <div class="flex items-center">
-              <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              <div>
-                <p class="font-bold">Appointment Booked!</p>
-                <p class="text-sm">${appointmentType} on ${date} at ${time}</p>
-              </div>
-            </div>
-          `;
+                  <div class="flex items-center">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <div>
+                      <p class="font-bold">Appointment Booked!</p>
+                      <p class="text-sm">${appointmentType} on ${date} at ${time}</p>
+                    </div>
+                  </div>
+                `;
 
             document.body.appendChild(notification);
 
@@ -1029,16 +1231,16 @@
             errorNotification.className =
               "fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg";
             errorNotification.innerHTML = `
-            <div class="flex items-center">
-              <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-              <div>
-                <p class="font-bold">Booking Failed</p>
-                <p class="text-sm">Please try again later</p>
-              </div>
-            </div>
-          `;
+                  <div class="flex items-center">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    <div>
+                      <p class="font-bold">Booking Failed</p>
+                      <p class="text-sm">Please try again later</p>
+                    </div>
+                  </div>
+                `;
 
             document.body.appendChild(errorNotification);
             setTimeout(() => {
@@ -1051,6 +1253,589 @@
             submitBtn.disabled = false;
           });
       });
+
+      // Rating system initialization
+      const reviewsCache = {};
+      const reviewsModal = document.getElementById("reviewsModal");
+      const closeReviewsModal = document.getElementById("closeReviewsModal");
+      const reviewForm = document.getElementById("reviewForm");
+      const reviewSort = document.getElementById("reviewSort");
+      let currentProviderId = null;
+
+      // Load provider ratings on initial load
+      function loadProviderRatings() {
+        console.log("Loading provider ratings...");
+        const providerElements =
+          document.querySelectorAll("[data-provider-id]");
+        console.log(
+          `Found ${providerElements.length} provider elements to load ratings for`
+        );
+
+        providerElements.forEach((element) => {
+          const providerId = element.dataset.providerId;
+          if (providerId) {
+            console.log("Found provider ID:", providerId);
+            // Debounce and batch requests to avoid overwhelming the server
+            setTimeout(() => {
+              fetchProviderRating(providerId);
+            }, Math.random() * 1000); // Random delay between 0-1000ms
+          }
+        });
+      }
+
+      // Fetch provider rating and update UI
+      function fetchProviderRating(providerId) {
+        console.log("Fetching rating for provider:", providerId);
+
+        // Check cache first
+        if (reviewsCache[providerId] && reviewsCache[providerId].summary) {
+          console.log("Using cached rating data");
+          updateRatingDisplay(providerId, reviewsCache[providerId].summary);
+          return;
+        }
+
+        // Otherwise fetch from server
+        console.log("Requesting rating from server for:", providerId);
+        fetch(`/api/provider-ratings/${providerId}`)
+          .then((response) => {
+            console.log("Rating API response:", response.status);
+            return response.json();
+          })
+          .then((data) => {
+            console.log("Rating data received:", data);
+            reviewsCache[providerId] = {
+              summary: data,
+              reviews: null, // We'll fetch reviews only when needed
+            };
+            updateRatingDisplay(providerId, data);
+          })
+          .catch((error) => {
+            console.error("Error fetching ratings:", error);
+          });
+      }
+
+      // Update UI with rating information
+      function updateRatingDisplay(providerId, data) {
+        console.log(
+          `Updating display for provider ${providerId} with rating ${data.average_rating}`
+        );
+
+        // Update rating text
+        const ratingElements = document.querySelectorAll(
+          `.provider-rating[data-provider-id="${providerId}"]`
+        );
+        ratingElements.forEach((el) => {
+          el.textContent = data.average_rating
+            ? data.average_rating.toFixed(1)
+            : "—";
+        });
+
+        // Update review count text
+        const reviewCountElements = document.querySelectorAll(
+          `.review-count[data-provider-id="${providerId}"]`
+        );
+        reviewCountElements.forEach((el) => {
+          el.textContent = `${data.review_count || 0} ${
+            data.review_count === 1 ? "review" : "reviews"
+          }`;
+        });
+
+        // Update star display
+        const starsContainers = document.querySelectorAll(
+          `.stars-container[data-provider-id="${providerId}"]`
+        );
+
+        starsContainers.forEach((container) => {
+          const rating = data.average_rating || 0;
+          container.dataset.rating = rating;
+
+          const stars = container.querySelectorAll(".star");
+          stars.forEach((star, index) => {
+            // Use data-star-index to determine position (1-based)
+            const position = parseInt(star.dataset.starIndex || index + 1);
+
+            // For whole stars
+            if (position <= Math.floor(rating)) {
+              star.setAttribute("fill", "currentColor");
+              star.setAttribute("stroke", "none");
+            }
+            // For partial star
+            else if (position === Math.floor(rating) + 1 && rating % 1 > 0) {
+              const percentage = (rating % 1) * 100;
+              star.innerHTML = `
+                <defs>
+                  <linearGradient id="partialFill-${providerId}-${position}" x1="0" x2="1" y1="0" y2="0">
+                    <stop offset="${rating % 1}" stop-color="currentColor" />
+                    <stop offset="${
+                      rating % 1
+                    }" stop-color="transparent" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <path fill="url(#partialFill-${providerId}-${position})" 
+                      stroke="currentColor" 
+                      stroke-width="1.5"
+                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              `;
+            }
+            // Empty stars
+            else {
+              star.setAttribute("fill", "none");
+              star.setAttribute("stroke", "currentColor");
+            }
+          });
+        });
+      }
+
+      // Fill stars based on rating
+      function updateStars(container, rating) {
+        const stars = container.querySelectorAll(".star");
+        stars.forEach((star, index) => {
+          // For whole stars
+          if (index < Math.floor(rating)) {
+            star.setAttribute("fill", "currentColor");
+            star.style.color = "#f97316"; // orange-500
+          }
+          // For partial star
+          else if (index === Math.floor(rating) && rating % 1 > 0) {
+            star.innerHTML = createPartialStar(rating % 1);
+            star.style.color = "#f97316"; // orange-500
+          }
+          // Empty stars
+          else {
+            star.setAttribute("fill", "none");
+            star.style.color = "#d1d5db"; // gray-300
+          }
+        });
+      }
+
+      // Create SVG for partial star
+      function createPartialStar(percentage) {
+        return `<defs>
+          <linearGradient id="partialFill" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="${percentage}" stop-color="currentColor" />
+            <stop offset="${percentage}" stop-color="transparent" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        <path fill="url(#partialFill)" stroke="currentColor" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />`;
+      }
+
+      // View reviews button click handler
+      function addReviewEventListeners() {
+        document.querySelectorAll(".view-reviews").forEach((button) => {
+          button.addEventListener("click", (e) => {
+            const providerId = e.target.getAttribute("data-id");
+            openReviewsModal(providerId);
+          });
+        });
+      }
+
+      // Open reviews modal
+      function openReviewsModal(providerId) {
+        currentProviderId = providerId;
+
+        // Get provider name
+        let providerName = "Provider";
+        const cardElement = document
+          .querySelector(`[data-provider-id="${providerId}"]`)
+          .closest(".bg-white");
+        if (cardElement) {
+          const nameElement = cardElement.querySelector("h3");
+          if (nameElement) {
+            providerName = nameElement.textContent.trim();
+          }
+        }
+
+        document.getElementById(
+          "reviewsModalTitle"
+        ).textContent = `Reviews for ${providerName}`;
+
+        // Reset form
+        document.getElementById("selectedRating").value = "0";
+        document.getElementById("reviewText").value = "";
+        const ratingStars = document.querySelectorAll(
+          "#ratingSelector .rating-star"
+        );
+        ratingStars.forEach((star) => star.classList.remove("text-orange-500"));
+
+        // Display the modal
+        reviewsModal.classList.remove("hidden");
+        reviewsModal.classList.add("flex");
+
+        // Load reviews
+        loadReviews(providerId);
+      }
+
+      // Load reviews for a provider
+      function loadReviews(providerId, sortBy = "recent") {
+        const reviewsList = document.getElementById("reviewsList");
+        reviewsList.innerHTML = `
+          <div class="flex items-center justify-center p-8">
+            <div class="w-8 h-8 border-4 border-orange-600 rounded-full border-t-transparent animate-spin"></div>
+          </div>
+        `;
+
+        // Fetch reviews from server or cache
+        if (reviewsCache[providerId] && reviewsCache[providerId].reviews) {
+          displayReviews(providerId, reviewsCache[providerId].reviews, sortBy);
+        } else {
+          fetch(`/api/provider-reviews/${providerId}`)
+            .then((response) => response.json())
+            .then((data) => {
+              if (!reviewsCache[providerId]) {
+                reviewsCache[providerId] = {};
+              }
+              reviewsCache[providerId].reviews = data;
+              displayReviews(providerId, data, sortBy);
+            })
+            .catch((error) => {
+              console.error("Error fetching reviews:", error);
+              reviewsList.innerHTML = `
+                <div class="p-6 text-center text-red-500">
+                  Failed to load reviews. Please try again.
+                </div>
+              `;
+            });
+        }
+
+        // Display rating summary in modal header
+        if (reviewsCache[providerId] && reviewsCache[providerId].summary) {
+          const summary = reviewsCache[providerId].summary;
+          document.getElementById("modalRating").textContent =
+            summary.average_rating ? summary.average_rating.toFixed(1) : "—";
+          document.getElementById("modalReviewCount").textContent = `${
+            summary.review_count || 0
+          } ${summary.review_count === 1 ? "review" : "reviews"}`;
+
+          // Update stars in modal
+          updateModalStars(summary.average_rating || 0);
+        }
+      }
+
+      // Update stars in the reviews modal
+      function updateModalStars(rating) {
+        const modalStarsContainer = document.getElementById(
+          "modalStarsContainer"
+        );
+        modalStarsContainer.innerHTML = "";
+
+        for (let i = 0; i < 5; i++) {
+          const star = document.createElement("svg");
+          star.classList.add("w-5", "h-5", "star");
+          star.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+          star.setAttribute("viewBox", "0 0 24 24");
+
+          if (i < Math.floor(rating)) {
+            // Full star
+            star.setAttribute("fill", "currentColor");
+            star.innerHTML =
+              '<path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" />';
+          } else if (i === Math.floor(rating) && rating % 1 > 0) {
+            // Partial star
+            star.innerHTML = createPartialStar(rating % 1);
+          } else {
+            // Empty star
+            star.setAttribute("fill", "none");
+            star.setAttribute("stroke", "currentColor");
+            star.innerHTML =
+              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />';
+          }
+
+          modalStarsContainer.appendChild(star);
+        }
+      }
+
+      // Display reviews in the modal
+      function displayReviews(providerId, reviews, sortBy) {
+        const reviewsList = document.getElementById("reviewsList");
+
+        // Sort reviews
+        let sortedReviews = [...reviews];
+        switch (sortBy) {
+          case "recent":
+            sortedReviews.sort(
+              (a, b) => new Date(b.created_at) - new Date(a.created_at)
+            );
+            break;
+          case "highest":
+            sortedReviews.sort((a, b) => b.rating - a.rating);
+            break;
+          case "lowest":
+            sortedReviews.sort((a, b) => a.rating - b.rating);
+            break;
+        }
+
+        // If no reviews
+        if (sortedReviews.length === 0) {
+          reviewsList.innerHTML = `
+                  <div class="p-6 text-center text-gray-500">
+                    No reviews yet. Be the first to review this provider!
+                  </div>
+                `;
+          return;
+        }
+
+        // Display reviews
+        reviewsList.innerHTML = "";
+        sortedReviews.forEach((review) => {
+          // Convert Firestore timestamp to JS Date if needed
+          let reviewDate;
+          if (review.created_at && review.created_at.seconds) {
+            // Handle Firestore timestamp format
+            reviewDate = new Date(review.created_at.seconds * 1000);
+          } else if (review.created_at) {
+            // Handle string or Date object
+            reviewDate = new Date(review.created_at);
+          } else {
+            reviewDate = new Date(); // Fallback
+          }
+
+          const formattedDate = reviewDate.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+
+          const reviewElement = document.createElement("div");
+          reviewElement.className =
+            "p-4 mb-4 border-b border-gray-100 last:border-0";
+          reviewElement.innerHTML = `
+                  <div class="flex items-center mb-2">
+                    <div class="flex text-orange-400">
+                      ${Array.from({ length: 5 }, (_, i) =>
+                        i < review.rating
+                          ? '<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>'
+                          : '<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>'
+                      ).join("")}
+                    </div>
+                    <span class="ml-2 text-sm font-medium text-gray-600">${
+                      review.user_name || "Anonymous User"
+                    }</span>
+                    <span class="ml-auto text-sm text-gray-400">${formattedDate}</span>
+                  </div>
+                  <p class="text-gray-700">${review.text}</p>
+                `;
+
+          reviewsList.appendChild(reviewElement);
+        });
+      }
+
+      // Handle review sorting
+      reviewSort.addEventListener("change", (e) => {
+        if (currentProviderId) {
+          loadReviews(currentProviderId, e.target.value);
+        }
+      });
+
+      // Close reviews modal
+      closeReviewsModal.addEventListener("click", () => {
+        reviewsModal.classList.add("hidden");
+        reviewsModal.classList.remove("flex");
+      });
+
+      // Rating star selection
+      const ratingStars = document.querySelectorAll(
+        "#ratingSelector .rating-star"
+      );
+      ratingStars.forEach((star) => {
+        star.addEventListener("click", () => {
+          const rating = parseInt(star.getAttribute("data-rating"));
+          document.getElementById("selectedRating").value = rating;
+
+          // Update star appearance
+          ratingStars.forEach((s) => {
+            if (parseInt(s.getAttribute("data-rating")) <= rating) {
+              s.classList.add("text-orange-500");
+              s.classList.remove("text-gray-300");
+            } else {
+              s.classList.remove("text-orange-500");
+              s.classList.add("text-gray-300");
+            }
+          });
+        });
+
+        // Hover effects
+        star.addEventListener("mouseenter", () => {
+          const rating = parseInt(star.getAttribute("data-rating"));
+          ratingStars.forEach((s) => {
+            if (parseInt(s.getAttribute("data-rating")) <= rating) {
+              s.classList.add("text-orange-400");
+              s.classList.remove("text-gray-300");
+            }
+          });
+        });
+
+        star.addEventListener("mouseleave", () => {
+          const selectedRating = parseInt(
+            document.getElementById("selectedRating").value
+          );
+          ratingStars.forEach((s) => {
+            const starRating = parseInt(s.getAttribute("data-rating"));
+            if (starRating <= selectedRating) {
+              s.classList.add("text-orange-500");
+              s.classList.remove("text-gray-300", "text-orange-400");
+            } else {
+              s.classList.remove("text-orange-500", "text-orange-400");
+              s.classList.add("text-gray-300");
+            }
+          });
+        });
+      });
+
+      // Handle review form submission
+      reviewForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        if (!currentProviderId) {
+          console.error("No provider selected for review");
+          return;
+        }
+
+        const rating = parseInt(
+          document.getElementById("selectedRating").value
+        );
+        const reviewText = document.getElementById("reviewText").value.trim();
+
+        if (rating === 0) {
+          // Show error for no rating
+          const ratingError = document.createElement("div");
+          ratingError.className = "text-sm text-red-500 mt-1 mb-4";
+          ratingError.textContent = "Please select a rating";
+
+          // Remove any existing error messages
+          const existingError = document.querySelector(".rating-error");
+          if (existingError) existingError.remove();
+
+          // Add error message
+          ratingError.classList.add("rating-error");
+          document
+            .getElementById("ratingSelector")
+            .parentNode.appendChild(ratingError);
+
+          // Clear error after 3 seconds
+          setTimeout(() => ratingError.remove(), 3000);
+
+          return;
+        }
+
+        // Disable submit button and show loading state
+        const submitButton = document.getElementById("submitReview");
+        const originalText = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = `
+                <span class="inline-block w-4 h-4 mr-2 border-2 border-white rounded-full border-t-transparent animate-spin"></span>
+                Submitting...
+              `;
+
+        // Get CSRF token
+        const csrfToken = document
+          .querySelector('meta[name="csrf-token"]')
+          ?.getAttribute("content");
+
+        // Send review to backend
+        fetch("/api/submit-review", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": csrfToken || "",
+          },
+          body: JSON.stringify({
+            provider_id: currentProviderId,
+            rating: rating,
+            review_text: reviewText,
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Review submission failed");
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Reset form
+            document.getElementById("selectedRating").value = "0";
+            document.getElementById("reviewText").value = "";
+            ratingStars.forEach((star) => {
+              star.classList.remove("text-orange-500");
+              star.classList.add("text-gray-300");
+            });
+
+            // Show success message
+            const successNotification = document.createElement("div");
+            successNotification.className =
+              "fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-500";
+            successNotification.innerHTML = `
+                  <div class="flex items-center">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <div>
+                      <p class="font-bold">Thank You!</p>
+                      <p class="text-sm">Your review has been submitted</p>
+                    </div>
+                  </div>
+                `;
+
+            document.body.appendChild(successNotification);
+
+            // Remove notification after 5 seconds
+            setTimeout(() => {
+              successNotification.style.opacity = "0";
+              setTimeout(() => successNotification.remove(), 500);
+            }, 5000);
+
+            // Refresh the reviews
+            if (reviewsCache[currentProviderId]) {
+              // Invalidate the cache to fetch fresh data
+              delete reviewsCache[currentProviderId];
+            }
+
+            // Reload reviews
+            loadReviews(currentProviderId, reviewSort.value);
+
+            // Also reload the provider ratings summary
+            fetchProviderRating(currentProviderId);
+
+            // Update all instances of this provider's rating on the page
+            loadProviderRatings();
+          })
+          .catch((error) => {
+            console.error("Review submission error:", error);
+
+            // Show error notification
+            const errorNotification = document.createElement("div");
+            errorNotification.className =
+              "fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg";
+            errorNotification.innerHTML = `
+                  <div class="flex items-center">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    <div>
+                      <p class="font-bold">Review Failed</p>
+                      <p class="text-sm">Please try again later</p>
+                    </div>
+                  </div>
+                `;
+
+            document.body.appendChild(errorNotification);
+
+            setTimeout(() => {
+              errorNotification.style.opacity = "0";
+              setTimeout(() => errorNotification.remove(), 500);
+            }, 5000);
+          })
+          .finally(() => {
+            // Reset button state
+            submitButton.innerHTML = originalText;
+            submitButton.disabled = false;
+          });
+      });
+
+      // Add event listeners for review buttons
+      addReviewEventListeners();
+
+      // Load provider ratings on initial load
+      loadProviderRatings();
     });
   </script>
 </div>

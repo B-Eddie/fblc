@@ -1,0 +1,21 @@
+/* Custom styles for main page features */
+.health-tip-card {
+    transition: transform 0.2s ease;
+}
+
+.health-tip-card:hover {
+    transform: translateY(-2px);
+}
+
+.recent-activity-item {
+    border-left: 3px solid #ea580c;
+}
+
+.article-read-more {
+    color: #ea580c;
+    font-weight: 500;
+}
+
+.article-read-more:hover {
+    text-decoration: underline;
+}

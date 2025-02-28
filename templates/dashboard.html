@@ -124,6 +124,27 @@
       </div>
     </div>
   </div>
-
+<!-- Latest Health News Section -->
+<div class="mt-8 border border-orange-200 rounded-lg shadow-lg bg-accent">
+  <div class="p-4 border-b border-orange-200">
+    <h2 class="text-lg font-semibold text-orange-700">Latest Health News</h2>
+  </div>
+  <div class="p-4">
+    {% if latest_news %}
+    <ul class="space-y-4">
+      {% for article in latest_news %}
+      <li>
+        <h3 class="text-lg font-semibold">{{ article.title }}</h3>
+        <p class="text-gray-600">{{ article.description or 'No description available' | truncate(150) }}</p>
+        <a href="{{ article.url }}" target="_blank" class="text-orange-600 hover:underline">Read more</a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-gray-600">Unable to fetch latest health news at this time.</p>
+    {% endif %}
+  </div>
+</div>
+</div>
 </div>
 {% endblock %}

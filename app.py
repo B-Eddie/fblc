@@ -917,5 +917,307 @@ def get_provider_reviews(provider_id):
         app.logger.error(f"Error getting provider reviews: {str(e)}")
         return jsonify({'error': 'An error occurred while fetching reviews'}), 500
 
+@app.route('/api/loyalty-settings/<business_id>')
+@login_required
+def get_loyalty_settings(business_id):
+    """Get loyalty program settings for a business"""
+    try:
+        # Get Firestore client
+        db = firestore.client()
+        
+        # Check if business exists and user is authorized
+        business_ref = db.collection('providers').document(business_id)
+        business_doc = business_ref.get()
+        
+        if not business_doc.exists:
+            return jsonify({'error': 'Business not found'}), 404
+            
+        business_data = business_doc.to_dict()
+        
+        # If user is not the owner, they can only view if loyalty program is active
+        if business_data.get('owner_id') != current_user.id:
+            # Return only public settings
+            loyalty_settings = {
+                'enabled': business_data.get('loyalty_enabled', False),
+                'visits_required': business_data.get('loyalty_visits_required', 0),
+                'reward_description': business_data.get('loyalty_reward', '')
+            }
+            return jsonify(loyalty_settings)
+        
+        # Owner gets full settings
+        loyalty_settings = {
+            'enabled': business_data.get('loyalty_enabled', False),
+            'visits_required': business_data.get('loyalty_visits_required', 10), 
+            'reward_description': business_data.get('loyalty_reward', ''),
+            'custom_message': business_data.get('loyalty_message', '')
+        }
+        
+        return jsonify(loyalty_settings)
+        
+    except Exception as e:
+        app.logger.error(f"Error fetching loyalty settings: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/loyalty-settings/<business_id>', methods=['POST'])
+@login_required
+def update_loyalty_settings(business_id):
+    """Update loyalty program settings for a business"""
+    try:
+        # Get data from request
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        # Get Firestore client
+        db = firestore.client()
+        
+        # Check if business exists and user is authorized
+        business_ref = db.collection('providers').document(business_id)
+        business_doc = business_ref.get()
+        
+        if not business_doc.exists:
+            return jsonify({'error': 'Business not found'}), 404
+            
+        business_data = business_doc.to_dict()
+        
+        # Verify user is the owner
+        if business_data.get('owner_id') != current_user.id:
+            return jsonify({'error': 'Unauthorized access'}), 403
+            
+        # Update loyalty settings
+        update_data = {
+            'loyalty_enabled': data.get('enabled', False),
+            'loyalty_visits_required': data.get('visits_required', 10),
+            'loyalty_reward': data.get('reward_description', ''),
+            'loyalty_message': data.get('custom_message', '')
+        }
+        
+        business_ref.update(update_data)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Loyalty program settings updated successfully'
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error updating loyalty settings: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/user-loyalty/<business_id>')
+@login_required
+def get_user_loyalty(business_id):
+    """Get user's loyalty status for a specific business"""
+    try:
+        # Get Firestore client
+        db = firestore.client()
+        
+        # Check if business exists
+        business_ref = db.collection('providers').document(business_id)
+        business_doc = business_ref.get()
+        
+        if not business_doc.exists:
+            return jsonify({'error': 'Business not found'}), 404
+            
+        business_data = business_doc.to_dict()
+        
+        # Check if loyalty program is enabled
+        if not business_data.get('loyalty_enabled', False):
+            return jsonify({
+                'enabled': False,
+                'message': 'Loyalty program is not enabled for this business'
+            })
+            
+        # Get user's loyalty data
+        loyalty_ref = db.collection('loyalty').document(f"{current_user.id}_{business_id}")
+        loyalty_doc = loyalty_ref.get()
+        
+        if not loyalty_doc.exists:
+            # Create new loyalty document for user if it doesn't exist
+            loyalty_data = {
+                'user_id': current_user.id,
+                'business_id': business_id,
+                'visits': 0,
+                'rewards_redeemed': 0,
+                'created_at': firestore.SERVER_TIMESTAMP
+            }
+            loyalty_ref.set(loyalty_data)
+        else:
+            loyalty_data = loyalty_doc.to_dict()
+            
+        # Calculate progress and status
+        visits_required = business_data.get('loyalty_visits_required', 10)
+        current_visits = loyalty_data.get('visits', 0)
+        rewards_redeemed = loyalty_data.get('rewards_redeemed', 0)
+        
+        # Check if reward is available
+        reward_available = current_visits >= visits_required
+        
+        return jsonify({
+            'enabled': True,
+            'visits': current_visits,
+            'visits_required': visits_required,
+            'progress': (current_visits % visits_required) / visits_required * 100,
+            'reward_available': reward_available,
+            'rewards_redeemed': rewards_redeemed,
+            'reward_description': business_data.get('loyalty_reward', ''),
+            'custom_message': business_data.get('loyalty_message', '')
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error fetching user loyalty: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/record-loyalty-visit/<business_id>', methods=['POST'])
+@login_required
+def record_loyalty_visit(business_id):
+    """Record a visit for the loyalty program"""
+    try:
+        # Get Firestore client
+        db = firestore.client()
+        
+        # Check if business exists and user is authorized (for business owner)
+        business_ref = db.collection('providers').document(business_id)
+        business_doc = business_ref.get()
+        
+        if not business_doc.exists:
+            return jsonify({'error': 'Business not found'}), 404
+            
+        business_data = business_doc.to_dict()
+        
+        # Check if loyalty program is enabled
+        if not business_data.get('loyalty_enabled', False):
+            return jsonify({'error': 'Loyalty program is not enabled for this business'}), 400
+            
+        # Get user ID - might be current user or specified user (if owner is recording)
+        data = request.get_json()
+        user_id = current_user.id
+        
+        # If request is from business owner, they can specify the user
+        if business_data.get('owner_id') == current_user.id and data and 'user_id' in data:
+            user_id = data['user_id']
+            
+        # Get user's loyalty document
+        loyalty_ref = db.collection('loyalty').document(f"{user_id}_{business_id}")
+        loyalty_doc = loyalty_ref.get()
+        
+        if not loyalty_doc.exists:
+            # Create new loyalty document
+            loyalty_data = {
+                'user_id': user_id,
+                'business_id': business_id,
+                'visits': 1,
+                'rewards_redeemed': 0,
+                'last_visit': firestore.SERVER_TIMESTAMP,
+                'created_at': firestore.SERVER_TIMESTAMP
+            }
+            loyalty_ref.set(loyalty_data)
+        else:
+            # Update existing document
+            loyalty_ref.update({
+                'visits': firestore.Increment(1),
+                'last_visit': firestore.SERVER_TIMESTAMP
+            })
+            
+        # Record visit in history
+        db.collection('loyalty_visits').add({
+            'user_id': user_id,
+            'business_id': business_id,
+            'recorded_by': current_user.id,
+            'timestamp': firestore.SERVER_TIMESTAMP
+        })
+        
+        # Get updated loyalty data
+        updated_loyalty = loyalty_ref.get().to_dict()
+        visits_required = business_data.get('loyalty_visits_required', 10)
+        reward_available = updated_loyalty.get('visits', 0) >= visits_required
+        
+        return jsonify({
+            'success': True,
+            'visits': updated_loyalty.get('visits', 1),
+            'reward_available': reward_available
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error recording loyalty visit: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/redeem-loyalty-reward/<business_id>', methods=['POST'])
+@login_required
+def redeem_loyalty_reward(business_id):
+    """Redeem a loyalty reward"""
+    try:
+        # Get Firestore client
+        db = firestore.client()
+        
+        # Check if business exists
+        business_ref = db.collection('providers').document(business_id)
+        business_doc = business_ref.get()
+        
+        if not business_doc.exists:
+            return jsonify({'error': 'Business not found'}), 404
+            
+        business_data = business_doc.to_dict()
+        
+        # Check if loyalty program is enabled
+        if not business_data.get('loyalty_enabled', False):
+            return jsonify({'error': 'Loyalty program is not enabled for this business'}), 400
+            
+        # Get user ID - might be current user or specified user (if owner is redeeming)
+        data = request.get_json()
+        user_id = current_user.id
+        
+        # If request is from business owner, they can specify the user
+        if business_data.get('owner_id') == current_user.id and data and 'user_id' in data:
+            user_id = data['user_id']
+            
+        # Get user's loyalty document
+        loyalty_ref = db.collection('loyalty').document(f"{user_id}_{business_id}")
+        loyalty_doc = loyalty_ref.get()
+        
+        if not loyalty_doc.exists:
+            return jsonify({'error': 'No loyalty record found for this user'}), 404
+            
+        loyalty_data = loyalty_doc.to_dict()
+        visits_required = business_data.get('loyalty_visits_required', 10)
+        
+        # Check if user has enough visits
+        if loyalty_data.get('visits', 0) < visits_required:
+            return jsonify({
+                'error': 'Not enough visits to redeem reward',
+                'visits': loyalty_data.get('visits', 0),
+                'visits_required': visits_required
+            }), 400
+            
+        # Calculate new visits (subtract required visits)
+        new_visits = loyalty_data.get('visits', 0) - visits_required
+        
+        # Update loyalty document
+        loyalty_ref.update({
+            'visits': new_visits,
+            'rewards_redeemed': firestore.Increment(1),
+            'last_redemption': firestore.SERVER_TIMESTAMP
+        })
+        
+        # Record redemption in history
+        db.collection('loyalty_redemptions').add({
+            'user_id': user_id,
+            'business_id': business_id,
+            'recorded_by': current_user.id,
+            'reward': business_data.get('loyalty_reward', ''),
+            'visits_required': visits_required,
+            'timestamp': firestore.SERVER_TIMESTAMP
+        })
+        
+        return jsonify({
+            'success': True,
+            'message': 'Reward redeemed successfully',
+            'remaining_visits': new_visits,
+            'reward': business_data.get('loyalty_reward', '')
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error redeeming loyalty reward: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=False)

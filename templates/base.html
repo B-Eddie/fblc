@@ -70,9 +70,10 @@
     </script>
   </head>
   <body onload="initHereMaps()" class="flex flex-col min-h-screen bg-orange-50">
-    <nav class="bg-orange-600 shadow-md" x-data="{ open: false }">
+    <nav class="bg-orange-600 shadow-md">
       <div class="px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div class="flex items-center justify-between">
+          <!-- Logo -->
           <a href="{{ url_for('index') }}" class="flex items-center">
             <img
               src="{{ url_for('static', filename='logo.png') }}"
@@ -80,446 +81,235 @@
               class="h-10"
             />
           </a>
-          <!-- Desktop Menu -->
-          <div class="hidden space-x-6 md:flex">
-            {% if current_user.is_authenticated %}
-            <a
-              href="{{ url_for('dashboard') }}"
-              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
+
+          <!-- Hamburger Menu -->
+          <div x-data="{ open: false }">
+            <button
+              @click="open = !open"
+              class="flex items-center px-3 py-2 text-white border border-orange-400 rounded hover:text-yellow-300 hover:border-white"
             >
-              <!-- Dashboard Icon -->
               <svg
-                class="w-5 h-5 mr-3"
+                class="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2"
                 viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
               >
                 <path
+                  x-show="!open"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"
-                ></path>
-              </svg>
-              Dashboard
-            </a>
-            <a
-              href="{{ url_for('find_providers') }}"
-              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
-            >
-              <!-- Search/Find Icon -->
-              <svg
-                class="w-5 h-5 mr-3"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M21 21l-4.35-4.35M8.5 14.5a5.5 5.5 0 1111 0 5.5 5.5 0 01-11 0z"
-                ></path>
-              </svg>
-              Find Providers
-            </a>
-            <a
-              href="{{ url_for('appointments') }}"
-              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
-            >
-              <!-- Appointments Icon -->
-              <svg
-                class="w-5 h-5 mr-3"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M8 7V3m8 4V3m-9 8h10m-10 4h10m-8 4h6"
-                ></path>
-              </svg>
-              Appointments
-            </a>
-            <a
-              href="{{ url_for('health_tracker') }}"
-              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
-            >
-              <!-- Health Tracker Icon -->
-              <svg
-                class="w-5 h-5 mr-3"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M9 19V6h3.5l1.5-2h5l1.5 2H21v13"
-                ></path>
-              </svg>
-              Health Tracker
-            </a>
-            <a
-              href="{{ url_for('manage_business') }}"
-              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
-            >
-              <!-- Business Icon -->
-              <svg
-                class="w-5 h-5 mr-3"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                ></path>
-              </svg>
-              Manage Business
-            </a>
-            <a
-              href="{{ url_for('my_loyalty') }}"
-              class="block px-3 py-2 text-orange-700 rounded-md hover:bg-orange-100 {% if request.path == '/my-loyalty' %}bg-orange-100 font-semibold{% endif %}"
-            >
-              <div class="flex items-center">
-                <svg
-                  class="w-5 h-5 mr-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 8v13m0-13V6a4 4 0 112.76 3.77c.08-.65.14-1.3.14-1.7A4.5 4.5 0 0010 3.5c-.5 0-1.33.08-2.34.23L7 11c-.7.13-1.4.37-2 .72m10 3.28V21M3 16c-.55 0-1 .45-1 1s.45 1 1 1h16c.55 0 1-.45 1-1s-.45-1-1-1H3z"
-                  ></path>
-                </svg>
-                My Rewards
-              </div>
-            </a>
-            <a
-              href="{{ url_for('logout') }}"
-              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
-            >
-              <!-- Logout Icon -->
-              <svg
-                class="w-5 h-5 mr-3"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M17 16l4-4m0 0l-4-4m4 4H7"
-                ></path>
-              </svg>
-              Logout
-            </a>
-            {% else %}
-            <a
-              href="{{ url_for('login') }}"
-              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
-            >
-              <!-- Login Icon -->
-              <svg
-                class="w-5 h-5 mr-3"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M15 12H3m0 0l4-4m-4 4l4 4"
-                ></path>
-              </svg>
-              Login
-            </a>
-            <a
-              href="{{ url_for('register') }}"
-              class="flex items-center text-white transition-colors duration-300 hover:text-yellow-300"
-            >
-              <!-- Register Icon -->
-              <svg
-                class="w-5 h-5 mr-3"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M12 4v16m8-8H4"
-                ></path>
-              </svg>
-              Register
-            </a>
-            {% endif %}
-          </div>
-          <!-- Mobile Menu Button -->
-          <div class="md:hidden">
-            <button @click="open = !open" class="text-white focus:outline-none">
-              <template x-if="!open">
-                <svg
-                  class="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
                   stroke-width="2"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  ></path>
-                </svg>
-              </template>
-              <template x-if="open">
-                <svg
-                  class="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
+                  d="M4 6h16M4 12h16M4 18h16"
+                ></path>
+                <path
+                  x-show="open"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
                   stroke-width="2"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  ></path>
-                </svg>
-              </template>
+                  d="M6 18L18 6M6 6l12 12"
+                ></path>
+              </svg>
+              <span class="ml-2">Menu</span>
             </button>
-          </div>
-        </div>
-      </div>
-      <!-- Mobile Menu -->
-      <div
-        x-show="open"
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="opacity-0 transform -translate-y-2"
-        x-transition:enter-end="opacity-100 transform translate-y-0"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="opacity-100 transform translate-y-0"
-        x-transition:leave-end="opacity-0 transform -translate-y-2"
-        class="bg-orange-600 md:hidden"
-      >
-        <div class="px-4 pt-2 pb-4 space-y-2">
-          {% if current_user.is_authenticated %}
-          <a
-            href="{{ url_for('dashboard') }}"
-            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
-          >
-            <!-- Dashboard Icon -->
-            <svg
-              class="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+
+            <!-- Menu Content -->
+            <div
+              x-show="open"
+              @click.away="open = false"
+              x-transition:enter="transition ease-out duration-300"
+              x-transition:enter-start="opacity-0 transform scale-95"
+              x-transition:enter-end="opacity-100 transform scale-100"
+              x-transition:leave="transition ease-in duration-200"
+              x-transition:leave-start="opacity-100 transform scale-100"
+              x-transition:leave-end="opacity-0 transform scale-95"
+              class="absolute right-0 z-20 w-full mt-2 origin-top-right bg-orange-600 rounded-md shadow-lg md:w-60"
+              style="right: 1rem"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"
-              ></path>
-            </svg>
-            Dashboard
-          </a>
-          <a
-            href="{{ url_for('find_providers') }}"
-            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
-          >
-            <!-- Find Providers Icon -->
-            <svg
-              class="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M21 21l-4.35-4.35M8.5 14.5a5.5 5.5 0 1111 0 5.5 5.5 0 01-11 0z"
-              ></path>
-            </svg>
-            Find Providers
-          </a>
-          <a
-            href="{{ url_for('appointments') }}"
-            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
-          >
-            <!-- Appointments Icon -->
-            <svg
-              class="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M8 7V3m8 4V3m-9 8h10m-10 4h10m-8 4h6"
-              ></path>
-            </svg>
-            Appointments
-          </a>
-          <a
-            href="{{ url_for('health_tracker') }}"
-            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
-          >
-            <!-- Health Tracker Icon -->
-            <svg
-              class="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M9 19V6h3.5l1.5-2h5l1.5 2H21v13"
-              ></path>
-            </svg>
-            Health Tracker
-          </a>
-          <a
-            href="{{ url_for('manage_business') }}"
-            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
-          >
-            <!-- Business Icon -->
-            <svg
-              class="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-              ></path>
-            </svg>
-            Manage Business
-          </a>
-          <a
-            href="{{ url_for('my_loyalty') }}"
-            class="block px-3 py-2 text-orange-700 rounded-md hover:bg-orange-100 {% if request.path == '/my-loyalty' %}bg-orange-100 font-semibold{% endif %}"
-          >
-            <div class="flex items-center">
-              <svg
-                class="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 8v13m0-13V6a4 4 0 112.76 3.77c.08-.65.14-1.3.14-1.7A4.5 4.5 0 0010 3.5c-.5 0-1.33.08-2.34.23L7 11c-.7.13-1.4.37-2 .72m10 3.28V21M3 16c-.55 0-1 .45-1 1s.45 1 1 1h16c.55 0 1-.45 1-1s-.45-1-1-1H3z"
-                ></path>
-              </svg>
-              My Rewards
+              <div class="p-10 py-1">
+                {% if current_user.is_authenticated %}
+                <a
+                  href="{{ url_for('dashboard') }}"
+                  class="flex items-center px-4 py-2 text-white hover:bg-orange-700"
+                >
+                  <svg
+                    class="w-5 h-5 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"
+                    ></path>
+                  </svg>
+                  Dashboard
+                </a>
+
+                <a
+                  href="{{ url_for('find_providers') }}"
+                  class="flex items-center px-4 py-2 text-white hover:bg-orange-700"
+                >
+                  <svg
+                    class="w-5 h-5 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M21 21l-4.35-4.35M8.5 14.5a5.5 5.5 0 1111 0 5.5 5.5 0 01-11 0z"
+                    ></path>
+                  </svg>
+                  Find Providers
+                </a>
+
+                <a
+                  href="{{ url_for('appointments') }}"
+                  class="flex items-center px-4 py-2 text-white hover:bg-orange-700"
+                >
+                  <svg
+                    class="w-5 h-5 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M8 7V3m8 4V3m-9 8h10m-10 4h10m-8 4h6"
+                    ></path>
+                  </svg>
+                  Appointments
+                </a>
+
+                <a
+                  href="{{ url_for('health_tracker') }}"
+                  class="flex items-center px-4 py-2 text-white hover:bg-orange-700"
+                >
+                  <svg
+                    class="w-5 h-5 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 19V6h3.5l1.5-2h5l1.5 2H21v13"
+                    ></path>
+                  </svg>
+                  Health Tracker
+                </a>
+
+                <a
+                  href="{{ url_for('manage_business') }}"
+                  class="flex items-center px-4 py-2 text-white hover:bg-orange-700"
+                >
+                  <svg
+                    class="w-5 h-5 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                    ></path>
+                  </svg>
+                  Manage Business
+                </a>
+
+                <a
+                  href="{{ url_for('my_loyalty') }}"
+                  class="flex items-center px-4 py-2 text-white hover:bg-orange-700"
+                >
+                  <svg
+                    class="w-5 h-5 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8v13m0-13V6a4 4 0 112.76 3.77c.08-.65.14-1.3.14-1.7A4.5 4.5 0 0010 3.5c-.5 0-1.33.08-2.34.23L7 11c-.7.13-1.4.37-2 .72m10 3.28V21M3 16c-.55 0-1 .45-1 1s.45 1 1 1h16c.55 0 1-.45 1-1s-.45-1-1-1H3z"
+                    ></path>
+                  </svg>
+                  My Rewards
+                </a>
+
+                <a
+                  href="{{ url_for('logout') }}"
+                  class="flex items-center px-4 py-2 text-white hover:bg-orange-700"
+                >
+                  <svg
+                    class="w-5 h-5 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M17 16l4-4m0 0l-4-4m4 4H7"
+                    ></path>
+                  </svg>
+                  Logout
+                </a>
+                {% else %}
+                <a
+                  href="{{ url_for('login') }}"
+                  class="flex items-center px-4 py-2 text-white hover:bg-orange-700"
+                >
+                  <svg
+                    class="w-5 h-5 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15 12H3m0 0l4-4m-4 4l4 4"
+                    ></path>
+                  </svg>
+                  Login
+                </a>
+
+                <a
+                  href="{{ url_for('register') }}"
+                  class="flex items-center px-4 py-2 text-white hover:bg-orange-700"
+                >
+                  <svg
+                    class="w-5 h-5 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 4v16m8-8H4"
+                    ></path>
+                  </svg>
+                  Register
+                </a>
+                {% endif %}
+              </div>
             </div>
-          </a>
-          <a
-            href="{{ url_for('logout') }}"
-            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
-          >
-            <!-- Logout Icon -->
-            <svg
-              class="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M17 16l4-4m0 0l-4-4m4 4H7"
-              ></path>
-            </svg>
-            Logout
-          </a>
-          {% else %}
-          <a
-            href="{{ url_for('login') }}"
-            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
-          >
-            <!-- Login Icon -->
-            <svg
-              class="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M15 12H3m0 0l4-4m-4 4l4 4"
-              ></path>
-            </svg>
-            Login
-          </a>
-          <a
-            href="{{ url_for('register') }}"
-            class="flex items-center block text-white transition-colors duration-300 hover:text-yellow-300"
-          >
-            <!-- Register Icon -->
-            <svg
-              class="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M12 4v16m8-8H4"
-              ></path>
-            </svg>
-            Register
-          </a>
-          {% endif %}
+          </div>
         </div>
       </div>
     </nav>

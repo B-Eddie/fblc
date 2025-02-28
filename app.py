@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 import firebase_admin
 from firebase_admin import credentials, firestore, auth, exceptions
@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 from functools import lru_cache
+import random
+import string
 
 # Matplotlib imports
 import base64
@@ -527,14 +529,66 @@ def api_provider(provider_id):
 @app.route('/admin')
 @login_required
 def admin():
-    # Retrieve provider documents and convert them to a list of dictionaries,
-    # including each document's id.
+    """Admin dashboard for system management"""
+    # Check if user is admin - only allow specific admin emails
+    if current_user.email != 'root@gmail.com':
+        flash('Unauthorized: Admin access required')
+        return redirect(url_for('dashboard'))
+    
+    # Create form for CSRF protection
+    form = FlaskForm()  # Add this line to create the form object
+    
+    # Get all providers for the admin panel
     providers = []
-    for provider_doc in db.collection('providers').stream():
-        provider_data = provider_doc.to_dict()
-        provider_data['id'] = provider_doc.id
+    providers_query = db.collection('providers').stream()
+    for doc in providers_query:
+        provider_data = doc.to_dict()
+        provider_data['id'] = doc.id
         providers.append(provider_data)
-    return render_template("admin.html", providers=providers)
+    
+    # Handle database cleanup request
+    if request.method == 'POST' and form.validate_on_submit():
+        collections_to_clean = request.form.getlist('collections')
+        confirmation_code = request.form.get('confirmation_code')
+        
+        # Extra security - require a confirmation code
+        if confirmation_code != "DELETE-CONFIRM":
+            flash('Invalid confirmation code')
+            return redirect(url_for('admin'))
+        
+        # Batch size for deletion (Firestore has limits)
+        batch_size = 500
+        total_deleted = 0
+        
+        for collection_name in collections_to_clean:
+            try:
+                deleted = delete_collection(db, collection_name, batch_size)
+                total_deleted += deleted
+                flash(f"Deleted {deleted} documents from {collection_name}")
+            except Exception as e:
+                flash(f"Error deleting from {collection_name}: {str(e)}")
+        
+        flash(f"Database cleanup completed. Total documents deleted: {total_deleted}")
+        return redirect(url_for('admin'))
+    
+    # Get list of collections for the form
+    collections = [
+        'appointments',
+        'health_data',
+        'loyalty',
+        'loyalty_redemptions',
+        'loyalty_visits',
+        'notifications',
+        'providers',
+        'reviews',
+        # Don't include 'users' by default as it's risky to delete user accounts
+    ]
+    
+    # Pass the form and collections to the template
+    return render_template("admin.html", 
+                          providers=providers, 
+                          form=form,  # Add this line to pass the form
+                          collections=collections)  # Add this line to pass collections
 
 @app.route('/api/verify-provider/<provider_id>', methods=['POST'])
 @csrf.exempt
@@ -625,15 +679,42 @@ def edit_business(business_id):
     form = FlaskForm()
     if request.method == 'POST' and form.validate_on_submit():
         try:
+            # Get loyalty program settings from form
+            loyalty_enabled = 'loyalty_enabled' in request.form
+            loyalty_visits_required = 10
+            loyalty_reward = ''
+            loyalty_message = ''
+            
+            if loyalty_enabled:
+                loyalty_visits_required = int(request.form.get('loyalty_visits_required', 10))
+                loyalty_reward = request.form.get('loyalty_reward', '')
+                loyalty_message = request.form.get('loyalty_message', '')
+                
+                # Basic validation
+                if loyalty_visits_required < 1:
+                    loyalty_visits_required = 1
+                elif loyalty_visits_required > 100:
+                    loyalty_visits_required = 100
+                    
+                if not loyalty_reward.strip():
+                    flash('Please provide a reward description for your loyalty program.')
+                    return render_template('edit_business.html', form=form, business=business_data, here_api_key=here_api_key)
+            
             # Update business data
             db.collection('providers').document(business_id).update({
                 'name': request.form.get('name'),
                 'specialty': request.form.get('specialty'),
                 'address': request.form.get('address'),
                 'phone': request.form.get('phone'),
-                'updated_at': firestore.SERVER_TIMESTAMP
+                'updated_at': firestore.SERVER_TIMESTAMP,
+                # Add loyalty settings
+                'loyalty_enabled': loyalty_enabled,
+                'loyalty_visits_required': loyalty_visits_required,
+                'loyalty_reward': loyalty_reward,
+                'loyalty_message': loyalty_message
             })
-            flash('Business updated successfully!')
+            
+            flash('Business information and loyalty program updated successfully!')
             return redirect(url_for('manage_business'))
         except Exception as e:
             flash(f'Error updating business: {e}')
@@ -754,6 +835,43 @@ def update_appointment_status(appointment_id):
         
         # Update the document
         appointment_ref.update(update_data)
+        
+        # IMPORTANT ADDITION: Record loyalty visit when appointment is marked as "completed"
+        if status == 'completed':
+            user_id = appointment_data.get('user_id')
+            if user_id and business_id:
+                # Check if business has loyalty program enabled
+                if business_data.get('loyalty_enabled', False):
+                    # Record a loyalty visit
+                    loyalty_ref = db.collection('loyalty').document(f"{user_id}_{business_id}")
+                    loyalty_doc = loyalty_ref.get()
+                    
+                    if not loyalty_doc.exists:
+                        # Create new loyalty document
+                        loyalty_data = {
+                            'user_id': user_id,
+                            'business_id': business_id,
+                            'visits': 1,
+                            'rewards_redeemed': 0,
+                            'last_visit': firestore.SERVER_TIMESTAMP,
+                            'created_at': firestore.SERVER_TIMESTAMP
+                        }
+                        loyalty_ref.set(loyalty_data)
+                    else:
+                        # Update existing document
+                        loyalty_ref.update({
+                            'visits': firestore.Increment(1),
+                            'last_visit': firestore.SERVER_TIMESTAMP
+                        })
+                    
+                    # Record visit in history
+                    db.collection('loyalty_visits').add({
+                        'user_id': user_id,
+                        'business_id': business_id,
+                        'appointment_id': appointment_id,
+                        'recorded_by': current_user.id,
+                        'timestamp': firestore.SERVER_TIMESTAMP
+                    })
         
         # If user has email, send notification
         if appointment_data.get('user_id'):
@@ -1218,6 +1336,749 @@ def redeem_loyalty_reward(business_id):
     except Exception as e:
         app.logger.error(f"Error redeeming loyalty reward: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/my-loyalty')
+@login_required
+def my_loyalty():
+    """Show user's loyalty programs and progress"""
+    try:
+        # Add debugging statements
+        app.logger.info(f"Starting my_loyalty view for user: {current_user.id}")
+        
+        # Check for appointments that should be loyalty eligible
+        appointments = list(db.collection('appointments')
+                           .where('user_id', '==', current_user.id)
+                           .where('status', '==', 'completed')
+                           .stream())
+        
+        app.logger.info(f"Found {len(appointments)} completed appointments")
+        
+        # Get all loyalty records for the current user
+        loyalty_programs = []
+        
+        # Query all loyalty documents where user is the current user
+        loyalty_query = db.collection('loyalty').where('user_id', '==', current_user.id).stream()
+        loyalty_docs = list(loyalty_query)
+        
+        app.logger.info(f"Found {len(loyalty_docs)} loyalty records")
+        
+        for loyalty_doc in loyalty_docs:
+            loyalty_data = loyalty_doc.to_dict()
+            business_id = loyalty_data.get('business_id')
+            
+            app.logger.info(f"Processing loyalty record for business: {business_id}")
+            
+            # Skip if no business ID
+            if not business_id:
+                app.logger.info("Skipping - no business ID")
+                continue
+                
+            # Get business details
+            business_doc = db.collection('providers').document(business_id).get()
+            
+            if not business_doc.exists:
+                app.logger.info(f"Skipping - business {business_id} does not exist")
+                continue
+                
+            business_data = business_doc.to_dict()
+            
+            # Only include businesses with active loyalty programs
+            if not business_data.get('loyalty_enabled', False):
+                app.logger.info(f"Skipping - loyalty not enabled for business {business_id}")
+                continue
+            
+            visits_required = business_data.get('loyalty_visits_required', 10)
+            current_visits = loyalty_data.get('visits', 0)
+            rewards_redeemed = loyalty_data.get('rewards_redeemed', 0)
+            
+            # Calculate if reward is available
+            available_rewards = current_visits // visits_required
+            used_rewards = rewards_redeemed
+            reward_available = available_rewards > used_rewards
+            
+            # Calculate progress percentage for the current cycle
+            current_cycle_visits = current_visits % visits_required
+            if reward_available:
+                progress = 100  # Already completed
+            else:
+                progress = (current_cycle_visits / visits_required) * 100
+            
+            # Create program object
+            program = {
+                'business_id': business_id,
+                'business_name': business_data.get('name', 'Unknown Business'),
+                'visits': current_visits,
+                'visits_required': visits_required,
+                'rewards_redeemed': rewards_redeemed,
+                'reward_available': reward_available,
+                'progress': progress,
+                'reward_description': business_data.get('loyalty_reward', 'Reward'),
+                'custom_message': business_data.get('loyalty_message', '')
+            }
+            
+            loyalty_programs.append(program)
+        
+        # If no loyalty programs found, automatically import from completed appointments
+        auto_import_occurred = False
+        if not loyalty_programs:
+            auto_import_occurred = True
+            import_count = auto_import_loyalty_data()
+            if import_count > 0:
+                # Re-query loyalty data if we found and imported appointments
+                return redirect(url_for('my_loyalty'))
+            
+        # Handle specific provider highlight if requested
+        highlight_provider = request.args.get('provider')
+        if highlight_provider:
+            for program in loyalty_programs:
+                if program['business_id'] == highlight_provider:
+                    program['highlight'] = True
+        
+        return render_template('my_loyalty.html', 
+                              loyalty_programs=loyalty_programs, 
+                              auto_import_occurred=auto_import_occurred)
+        
+    except Exception as e:
+        app.logger.error(f"Error fetching loyalty programs: {str(e)}")
+        flash("There was an error loading your loyalty programs. Please try again later.")
+        return render_template('my_loyalty.html', loyalty_programs=[], auto_import_occurred=False)
+
+
+def auto_import_loyalty_data():
+    """Helper function to automatically import loyalty data from completed appointments"""
+    try:
+        # Get all completed appointments for the current user
+        appointments_query = db.collection('appointments')\
+            .where('user_id', '==', current_user.id)\
+            .where('status', '==', 'completed')\
+            .stream()
+        
+        processed_count = 0
+        business_visits = {}  # Track visits per business
+        
+        # Process each appointment
+        for appt in appointments_query:
+            try:
+                appt_data = appt.to_dict()
+                business_id = appt_data.get('provider_id')
+                
+                if not business_id:
+                    continue
+                
+                # Check if business exists and has loyalty enabled
+                business_doc = db.collection('providers').document(business_id).get()
+                if not business_doc:  # Use .exists property instead
+                    continue
+                
+                business_data = business_doc.to_dict()
+                # Don't call the value, just check if it's True
+                if not business_data.get('loyalty_enabled', False):
+                    continue
+                
+                # Count visits per business
+                if business_id not in business_visits:
+                    business_visits[business_id] = {
+                        'visits': 1,
+                        'business_data': business_data,
+                        'last_visit': appt_data.get('updated_at', firestore.SERVER_TIMESTAMP)
+                    }
+                else:
+                    business_visits[business_id]['visits'] += 1
+                    
+                    # Update last visit time if newer
+                    current_last = business_visits[business_id]['last_visit']
+                    appt_time = appt_data.get('updated_at')
+                    if appt_time and (not current_last or appt_time > current_last):
+                        business_visits[business_id]['last_visit'] = appt_time
+                
+                processed_count += 1
+                
+            except Exception as e:
+                app.logger.error(f"Error processing appointment {appt.id}: {str(e)}")
+        
+        # Now create loyalty records for each business
+        for business_id, data in business_visits.items():
+            loyalty_ref = db.collection('loyalty').document(f"{current_user.id}_{business_id}")
+            
+            loyalty_data = {
+                'user_id': current_user.id,
+                'business_id': business_id,
+                'visits': data['visits'],
+                'rewards_redeemed': 0,
+                'last_visit': data['last_visit'],
+                'created_at': firestore.SERVER_TIMESTAMP
+            }
+            
+            loyalty_ref.set(loyalty_data)
+        
+        if processed_count > 0:
+            flash(f"We found {processed_count} completed appointments and added them to your loyalty programs!")
+            
+        return processed_count
+        
+    except Exception as e:
+        app.logger.error(f"Error in auto loyalty import: {str(e)}")
+        flash("There was an error importing your loyalty data.")
+        return 0
+
+# Add this route after the my_loyalty function
+@app.route('/migrate-loyalty-data')
+@login_required
+def migrate_loyalty_data():
+    """
+    Migration helper to populate loyalty data from completed appointments.
+    This should only be run once when setting up the loyalty system.
+    """
+    try:
+        # Get all completed appointments for the current user
+        appointments_query = db.collection('appointments')\
+            .where('user_id', '==', current_user.id)\
+            .where('status', '==', 'completed')\
+            .stream()
+        
+        # Track which appointments have already been processed for loyalty
+        processed_appointments = set()
+        
+        # First, get all existing loyalty visit records to avoid duplicates
+        existing_visits = db.collection('loyalty_visits')\
+            .where('user_id', '==', current_user.id)\
+            .stream()
+            
+        # Create a set of appointment IDs that have already been processed
+        for visit in existing_visits:
+            visit_data = visit.to_dict()
+            if 'appointment_id' in visit_data:
+                processed_appointments.add(visit_data['appointment_id'])
+                
+        processed_count = 0
+        skipped_count = 0
+        error_count = 0
+        
+        # Track visits per business to avoid duplicate counting
+        business_visits = {}
+        
+        # Process each appointment
+        for appt in appointments_query:
+            try:
+                # Skip if this appointment has already been processed for loyalty
+                if appt.id in processed_appointments:
+                    skipped_count += 1
+                    continue
+                    
+                appt_data = appt.to_dict()
+                business_id = appt_data.get('provider_id')
+                
+                if not business_id:
+                    skipped_count += 1
+                    continue
+                
+                # Check if business exists and has loyalty enabled
+                business_doc = db.collection('providers').document(business_id).get()
+                if not business_doc.exists:
+                    skipped_count += 1
+                    continue
+                
+                business_data = business_doc.to_dict()
+                if not business_data.get('loyalty_enabled', False):
+                    skipped_count += 1
+                    continue
+                
+                # Add to business visits counter
+                if business_id not in business_visits:
+                    business_visits[business_id] = {
+                        'count': 0,
+                        'last_visit': None
+                    }
+                
+                business_visits[business_id]['count'] += 1
+                
+                # Track last visit time
+                visit_time = appt_data.get('updated_at', firestore.SERVER_TIMESTAMP)
+                if not business_visits[business_id]['last_visit'] or \
+                   (visit_time and business_visits[business_id]['last_visit'] < visit_time):
+                    business_visits[business_id]['last_visit'] = visit_time
+                
+                # Record this visit in the loyalty_visits collection to prevent future duplicate processing
+                db.collection('loyalty_visits').add({
+                    'user_id': current_user.id,
+                    'business_id': business_id,
+                    'appointment_id': appt.id,
+                    'recorded_by': current_user.id,
+                    'timestamp': firestore.SERVER_TIMESTAMP,
+                    'visit_date': visit_time,
+                    'migrated': True
+                })
+                
+                # Record was successfully processed
+                processed_count += 1
+                
+            except Exception as e:
+                app.logger.error(f"Error processing appointment {appt.id}: {str(e)}")
+                error_count += 1
+        
+        # Now update loyalty documents with aggregated visit counts
+        for business_id, visit_data in business_visits.items():
+            # Get or create loyalty document
+            loyalty_ref = db.collection('loyalty').document(f"{current_user.id}_{business_id}")
+            loyalty_doc = loyalty_ref.get()
+            
+            if not loyalty_doc.exists:
+                # Create new loyalty document
+                loyalty_data = {
+                    'user_id': current_user.id,
+                    'business_id': business_id,
+                    'visits': visit_data['count'],
+                    'rewards_redeemed': 0,
+                    'last_visit': visit_data['last_visit'],
+                    'created_at': firestore.SERVER_TIMESTAMP
+                }
+                loyalty_ref.set(loyalty_data)
+            else:
+                # Update existing document - increment by the newly processed visits
+                # We're not using Increment here because we want to add the exact number of new visits
+                loyalty_data = loyalty_doc.to_dict()
+                existing_visits = loyalty_data.get('visits', 0)
+                
+                loyalty_ref.update({
+                    'visits': existing_visits + visit_data['count'],
+                    'last_visit': visit_data['last_visit'] or firestore.SERVER_TIMESTAMP
+                })
+        
+        flash(f"Migration complete: {processed_count} appointments processed, {skipped_count} skipped, {error_count} errors")
+        return redirect(url_for('my_loyalty'))
+    
+    except Exception as e:
+        app.logger.error(f"Error in loyalty migration: {str(e)}")
+        flash("There was an error migrating loyalty data. Please try again later.")
+        return redirect(url_for('my_loyalty'))
+
+@app.route('/redeem-reward/<business_id>')
+@login_required
+def redeem_reward(business_id):
+    """Allow user to redeem a loyalty reward"""
+    try:
+        # Check if business exists
+        business_doc = db.collection('providers').document(business_id).get()
+        
+        if not business_doc.exists:
+            flash('Business not found')
+            return redirect(url_for('my_loyalty'))
+            
+        business_data = business_doc.to_dict()
+        
+        # Check if loyalty program is enabled
+        if not business_data.get('loyalty_enabled', False):
+            flash('This business does not have an active loyalty program')
+            return redirect(url_for('my_loyalty'))
+            
+        # Get user's loyalty document
+        loyalty_ref = db.collection('loyalty').document(f"{current_user.id}_{business_id}")
+        loyalty_doc = loyalty_ref.get()
+        
+        if not loyalty_doc.exists:
+            flash('You do not have a loyalty record with this business')
+            return redirect(url_for('my_loyalty'))
+            
+        loyalty_data = loyalty_doc.to_dict()
+        visits_required = business_data.get('loyalty_visits_required', 10)
+        
+        # Calculate if reward is available
+        current_visits = loyalty_data.get('visits', 0)
+        rewards_redeemed = loyalty_data.get('rewards_redeemed', 0)
+        
+        available_rewards = current_visits // visits_required
+        used_rewards = rewards_redeemed
+        
+        if available_rewards <= used_rewards:
+            flash('You do not have any rewards available to redeem')
+            return redirect(url_for('my_loyalty'))
+        
+        # Instead of calling the API directly, let's implement the redemption logic here
+        try:
+            # Calculate new visits (current visits are enough for one more reward)
+            new_visits = current_visits - visits_required
+            
+            # Generate a unique redemption code
+            redemption_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            
+            # Save redemption in history with the code
+            redemption_ref = db.collection('loyalty_redemptions').add({
+                'user_id': current_user.id,
+                'user_email': current_user.email,
+                'user_name': getattr(current_user, 'name', current_user.email.split('@')[0]),
+                'business_id': business_id,
+                'business_name': business_data.get('name', 'Unknown Business'),
+                'recorded_by': current_user.id,
+                'reward': business_data.get('loyalty_reward', ''),
+                'code': redemption_code,
+                'visits_required': visits_required,
+                'status': 'pending',  # Will be marked as 'redeemed' when used at business
+                'created_at': firestore.SERVER_TIMESTAMP,
+                'expires_at': datetime.now() + timedelta(days=30)  # Code expires in 30 days
+            })
+            
+            # Update loyalty document
+            loyalty_ref.update({
+                'visits': new_visits,
+                'rewards_redeemed': firestore.Increment(1),
+                'last_redemption': firestore.SERVER_TIMESTAMP
+            })
+            
+            # Send notification to business owner
+            owner_id = business_data.get('owner_id')
+            if owner_id:
+                # Create notification document
+                db.collection('notifications').add({
+                    'recipient_id': owner_id,
+                    'type': 'loyalty_redemption',
+                    'title': 'Loyalty Reward Redeemed',
+                    'message': f"{current_user.name or current_user.email} has redeemed a loyalty reward: {business_data.get('loyalty_reward', 'Reward')}",
+                    'business_id': business_id,
+                    'user_id': current_user.id,
+                    'code': redemption_code,
+                    'read': False,
+                    'created_at': firestore.SERVER_TIMESTAMP
+                })
+                
+                # Get owner's email for potential email notification
+                owner_doc = db.collection('users').document(owner_id).get()
+                if owner_doc.exists:
+                    owner_data = owner_doc.to_dict()
+                    owner_email = owner_data.get('email')
+                    
+                    # For future implementation: Send email to business owner
+                    # This would require setting up an email service
+                    print(f"Would send email to {owner_email} about loyalty redemption code {redemption_code}")
+            
+            # Show confirmation page with redemption code
+            return render_template('redeem_rewards.html',
+                                  business=business_data,
+                                  reward=business_data.get('loyalty_reward', 'Reward'),
+                                  redemption_code=redemption_code,
+                                  expiration=datetime.now() + timedelta(days=30))
+                                  
+        except Exception as e:
+            app.logger.error(f"Error during reward redemption: {str(e)}")
+            flash(f"Error redeeming reward: {str(e)}")
+            return redirect(url_for('my_loyalty'))
+        
+    except Exception as e:
+        app.logger.error(f"Error redeeming reward: {str(e)}")
+        flash("There was an error processing your redemption. Please try again later.")
+        return redirect(url_for('my_loyalty'))
+    
+
+@app.route('/api/verify-reward-code', methods=['POST'])
+@login_required
+def verify_reward_code():
+    """Verify a loyalty reward redemption code"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'valid': False, 'error': 'No data provided'}), 400
+            
+        code = data.get('code')
+        business_id = data.get('business_id')
+        
+        if not code or not business_id:
+            return jsonify({'valid': False, 'error': 'Missing code or business ID'}), 400
+            
+        # Check if business belongs to current user
+        business_doc = db.collection('providers').document(business_id).get()
+        if not business_doc.exists:
+            return jsonify({'valid': False, 'error': 'Business not found'}), 404
+            
+        business_data = business_doc.to_dict()
+        if business_data.get('owner_id') != current_user.id:
+            return jsonify({'valid': False, 'error': 'Unauthorized'}), 403
+            
+        # Query for the redemption code
+        redemptions = db.collection('loyalty_redemptions')\
+            .where('code', '==', code)\
+            .stream()
+            
+        # Filter manually for business ID since multiple where clauses are causing issues
+        redemption_doc = None
+        for doc in redemptions:
+            doc_data = doc.to_dict()
+            if doc_data.get('business_id') == business_id:
+                redemption_doc = doc
+                redemption_data = doc_data
+                break
+        
+        if not redemption_doc:
+            return jsonify({'valid': False, 'error': 'Redemption code not found'}), 404
+            
+        # Check if code is expired
+        if 'expires_at' in redemption_data:
+            expires_at = redemption_data['expires_at']
+            # Convert to naive datetime object for comparison if it's timezone-aware
+            if hasattr(expires_at, 'tzinfo') and expires_at.tzinfo is not None:
+                # Convert to UTC then remove timezone info
+                expires_at = expires_at.astimezone(timezone.utc).replace(tzinfo=None)
+            
+            # Make sure current time is naive for comparison
+            current_time = datetime.now()
+            if current_time > expires_at:
+                return jsonify({'valid': False, 'error': 'This code has expired'}), 400
+                
+        # Check if already redeemed
+        if redemption_data.get('status') == 'redeemed':
+            return jsonify({'valid': False, 'error': 'This code has already been redeemed'}), 400
+            
+        # Return validation result with user info
+        return jsonify({
+            'valid': True,
+            'user_id': redemption_data.get('user_id'),
+            'user_email': redemption_data.get('user_email'),
+            'user_name': redemption_data.get('user_name', ''),
+            'reward': redemption_data.get('reward', ''),
+            'created_at': str(redemption_data.get('created_at')),
+            'code': code
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error verifying reward code: {str(e)}")
+        return jsonify({'valid': False, 'error': str(e)}), 500
+
+@app.route('/api/mark-reward-redeemed', methods=['POST'])
+@login_required
+def mark_reward_redeemed():
+    """Mark a loyalty reward as redeemed"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'}), 400
+            
+        code = data.get('code')
+        business_id = data.get('business_id')
+        
+        if not code or not business_id:
+            return jsonify({'success': False, 'error': 'Missing code or business ID'}), 400
+            
+        # Check if business belongs to current user
+        business_doc = db.collection('providers').document(business_id).get()
+        if not business_doc.exists:
+            return jsonify({'success': False, 'error': 'Business not found'}), 404
+            
+        business_data = business_doc.to_dict()
+        if business_data.get('owner_id') != current_user.id:
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+            
+        # Query for the redemption code
+        redemptions = db.collection('loyalty_redemptions')\
+            .where('code', '==', code)\
+            .stream()
+            
+        # Filter manually for business ID
+        redemption_doc = None
+        for doc in redemptions:
+            doc_data = doc.to_dict()
+            if doc_data.get('business_id') == business_id:
+                redemption_doc = doc
+                redemption_data = doc_data
+                break
+        
+        if not redemption_doc:
+            return jsonify({'success': False, 'error': 'Redemption code not found'}), 404
+            
+        # Check if code is expired
+        if 'expires_at' in redemption_data:
+            expires_at = redemption_data['expires_at']
+            # Convert to naive datetime object for comparison if it's timezone-aware
+            if hasattr(expires_at, 'tzinfo') and expires_at.tzinfo is not None:
+                # Convert to UTC then remove timezone info
+                expires_at = expires_at.astimezone(timezone.utc).replace(tzinfo=None)
+            
+            # Make sure current time is naive for comparison
+            current_time = datetime.now()
+            if current_time > expires_at:
+                return jsonify({'success': False, 'error': 'This code has expired'}), 400
+                
+        # Check if already redeemed
+        if redemption_data.get('status') == 'redeemed':
+            return jsonify({'success': False, 'error': 'This code has already been redeemed'}), 400
+            
+        # Mark as redeemed
+        db.collection('loyalty_redemptions').document(redemption_doc.id).update({
+            'status': 'redeemed',
+            'redeemed_at': firestore.SERVER_TIMESTAMP,
+            'redeemed_by': current_user.id
+        })
+        
+        # Add notification for the user
+        db.collection('notifications').add({
+            'recipient_id': redemption_data.get('user_id'),
+            'type': 'reward_redeemed',
+            'title': 'Reward Redeemed',
+            'message': f"Your reward at {business_data.get('name')} has been redeemed.",
+            'business_id': business_id,
+            'read': False,
+            'created_at': firestore.SERVER_TIMESTAMP
+        })
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Reward successfully marked as redeemed'
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error marking reward as redeemed: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/admin/cleanup-database', methods=['GET', 'POST'])
+@login_required
+def cleanup_database():
+    """Admin function to clean up database collections"""
+    # Check if user is admin - IMPORTANT FOR SECURITY!
+    # Replace this with your actual admin check logic
+    user_doc = db.collection('users').document(current_user.id).get()
+    if not user_doc.exists or current_user.email != 'admin@example.com':
+        flash('Unauthorized: Admin access required')
+        return redirect(url_for('dashboard'))
+    
+    form = FlaskForm()
+    
+    if request.method == 'POST' and form.validate_on_submit():
+        collections_to_clean = request.form.getlist('collections')
+        confirmation_code = request.form.get('confirmation_code')
+        
+        # Extra security - require a confirmation code
+        if confirmation_code != "DELETE-CONFIRM":
+            flash('Invalid confirmation code')
+            return redirect(url_for('cleanup_database'))
+        
+        # Batch size for deletion (Firestore has limits)
+        batch_size = 500
+        total_deleted = 0
+        
+        for collection_name in collections_to_clean:
+            try:
+                deleted = delete_collection(db, collection_name, batch_size)
+                total_deleted += deleted
+                flash(f"Deleted {deleted} documents from {collection_name}")
+            except Exception as e:
+                flash(f"Error deleting from {collection_name}: {str(e)}")
+        
+        flash(f"Database cleanup completed. Total documents deleted: {total_deleted}")
+    
+    # Get list of collections for the form
+    collections = [
+        'appointments',
+        'health_data',
+        'loyalty',
+        'loyalty_redemptions',
+        'loyalty_visits',
+        'notifications',
+        'providers',
+        'reviews',
+        # Don't include 'users' by default as it's risky to delete user accounts
+    ]
+    
+    return render_template('admin/cleanup_database.html', form=form, collections=collections)
+
+def delete_collection(db, collection_name, batch_size):
+    """Helper function to delete all documents in a collection"""
+    deleted_count = 0
+    docs = db.collection(collection_name).limit(batch_size).stream()
+    docs_list = list(docs)
+    
+    if not docs_list:
+        return 0
+    
+    for doc in docs_list:
+        doc.reference.delete()
+        deleted_count += 1
+    
+    # If we've deleted a full batch, there might be more
+    if len(docs_list) >= batch_size:
+        # Recursively delete more
+        deleted_count += delete_collection(db, collection_name, batch_size)
+    
+    return deleted_count
+
+def delete_collection_documents(db, collection_name, batch_size):
+    """Helper function to delete all documents in a collection without removing the collection itself"""
+    deleted_count = 0
+    docs = db.collection(collection_name).limit(batch_size).stream()
+    docs_list = list(docs)
+    
+    if not docs_list:
+        return 0
+    
+    for doc in docs_list:
+        doc.reference.delete()
+        deleted_count += 1
+    
+    # If we've deleted a full batch, there might be more
+    if len(docs_list) >= batch_size:
+        # Recursively delete more
+        deleted_count += delete_collection_documents(db, collection_name, batch_size)
+    
+    return deleted_count
+
+@app.route('/admin', methods=['GET', 'POST'])
+@login_required
+def admin_dashboard():
+    """Admin dashboard for system management"""
+    # Check if user is admin - only allow specific admin emails
+    authorized_admins = ['root@gmail.com']  # Add your admin email
+    if current_user.email not in authorized_admins:
+        flash('Unauthorized: Admin access required')
+        return redirect(url_for('dashboard'))
+    
+    # Create form for CSRF protection
+    form = FlaskForm()
+    
+    # Get all providers for the admin panel
+    providers = []
+    providers_query = db.collection('providers').stream()
+    for doc in providers_query:
+        provider_data = doc.to_dict()
+        provider_data['id'] = doc.id
+        providers.append(provider_data)
+    
+    # Handle database cleanup request
+    if request.method == 'POST' and form.validate_on_submit():
+        collections_to_clean = request.form.getlist('collections')
+        confirmation_code = request.form.get('confirmation_code')
+        
+        # Extra security - require a confirmation code
+        if confirmation_code != "DELETE-CONFIRM":
+            flash('Invalid confirmation code')
+            return redirect(url_for('admin_dashboard'))
+        
+        # Batch size for deletion (Firestore has limits)
+        batch_size = 500
+        total_deleted = 0
+        
+        for collection_name in collections_to_clean:
+            try:
+                # Use the new function that preserves collections but removes documents
+                deleted = delete_collection_documents(db, collection_name, batch_size)
+                total_deleted += deleted
+                flash(f"Cleared {deleted} documents from {collection_name}")
+            except Exception as e:
+                flash(f"Error clearing documents from {collection_name}: {str(e)}")
+        
+        flash(f"Database cleanup completed. Total documents deleted: {total_deleted}")
+        return redirect(url_for('admin_dashboard'))
+    
+    # Get list of collections for the form
+    collections = [
+        'appointments',
+        'health_data',
+        'loyalty',
+        'loyalty_redemptions',
+        'loyalty_visits',
+        'notifications',
+        'providers',
+        'reviews',
+        # Don't include 'users' by default as it's risky to delete user accounts
+    ]
+    
+    return render_template('admin.html', form=form, collections=collections, providers=providers)
 
 if __name__ == '__main__':
     app.run(debug=False)

@@ -31,7 +31,8 @@
   <div class="grid gap-6 mb-12 md:grid-cols-2 lg:grid-cols-3">
     {% for business in businesses %}
     <div
-      class="p-6 transition duration-300 bg-white border border-orange-200 rounded-lg shadow-md hover:shadow-lg"
+      class="p-6 transition duration-300 bg-white border border-orange-200 rounded-lg shadow-md hover:shadow-lg business-card"
+      data-id="{{ business.id }}"
     >
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-semibold text-orange-600">
@@ -55,7 +56,7 @@
         <span class="font-medium">Phone:</span> {{ business.phone }}
       </p>
 
-      <div class="flex justify-between mt-6">
+      <div class="flex justify-between mt-6 business-actions">
         <a
           href="{{ url_for('edit_business', business_id=business.id) }}"
           class="px-3 py-2 text-sm font-medium text-black transition duration-300 bg-blue-100 border border-blue-500 rounded hover:bg-blue-200"
@@ -272,7 +273,7 @@
       </div>
     </div>
   </div>
-  <br /><br>
+  <br /><br />
   <!-- Calendar View -->
   <div class="mt-12">
     <h2 class="mb-6 text-2xl font-bold text-orange-600">
@@ -298,23 +299,64 @@
     <div class="p-5 bg-white rounded-lg shadow">
       <!-- Calendar will be rendered here -->
       <div id="calendar" class="fc fc-media-screen fc-direction-ltr"></div>
-      
+
       <!-- Calendar Legend -->
-      <div style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; font-size: 0.875rem;">
-        <div style="display: flex; align-items: center;">
-          <span style="width: 12px; height: 12px; border-radius: 50%; background-color: #00FF00; margin-right: 0.5rem;"></span>
+      <div
+        style="
+          margin-top: 1rem;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+          justify-content: center;
+          font-size: 0.875rem;
+        "
+      >
+        <div style="display: flex; align-items: center">
+          <span
+            style="
+              width: 12px;
+              height: 12px;
+              border-radius: 50%;
+              background-color: #00ff00;
+              margin-right: 0.5rem;
+            "
+          ></span>
           <span>Confirmed</span>
         </div>
-        <div style="display: flex; align-items: center;">
-          <span style="width: 12px; height: 12px; border-radius: 50%; background-color: #FFFF00; margin-right: 0.5rem;"></span>
+        <div style="display: flex; align-items: center">
+          <span
+            style="
+              width: 12px;
+              height: 12px;
+              border-radius: 50%;
+              background-color: #ffff00;
+              margin-right: 0.5rem;
+            "
+          ></span>
           <span>Pending</span>
         </div>
-        <div style="display: flex; align-items: center;">
-          <span style="width: 12px; height: 12px; border-radius: 50%; background-color: #FF0000; margin-right: 0.5rem;"></span>
+        <div style="display: flex; align-items: center">
+          <span
+            style="
+              width: 12px;
+              height: 12px;
+              border-radius: 50%;
+              background-color: #ff0000;
+              margin-right: 0.5rem;
+            "
+          ></span>
           <span>Cancelled</span>
         </div>
-        <div style="display: flex; align-items: center;">
-          <span style="width: 12px; height: 12px; border-radius: 50%; background-color: #0000FF; margin-right: 0.5rem;"></span>
+        <div style="display: flex; align-items: center">
+          <span
+            style="
+              width: 12px;
+              height: 12px;
+              border-radius: 50%;
+              background-color: #0000ff;
+              margin-right: 0.5rem;
+            "
+          ></span>
           <span>Completed</span>
         </div>
       </div>
@@ -484,6 +526,48 @@
     </a>
   </div>
   {% endif %}
+</div>
+
+<!-- Add this section after your existing content but before the closing div -->
+
+<div
+  id="verifyRewardModal"
+  class="fixed inset-0 z-30 hidden w-full h-full overflow-y-auto bg-gray-600 bg-opacity-50"
+>
+  <div
+    class="relative p-5 mx-auto bg-white border rounded-md shadow-lg top-20 w-96"
+  >
+    <div class="mt-3 text-center">
+      <h3 class="text-lg font-medium leading-6 text-gray-900">
+        Verify Loyalty Reward
+      </h3>
+      <div class="mt-4">
+        <input
+          type="text"
+          id="rewardCode"
+          placeholder="Enter redemption code"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+        />
+        <div id="verificationResult" class="hidden mt-2 text-left">
+          <!-- Results will be shown here -->
+        </div>
+      </div>
+      <div class="flex justify-between mt-4">
+        <button
+          id="closeVerifyRewardModal"
+          class="px-4 py-2 text-gray-800 bg-gray-200 rounded hover:bg-gray-300"
+        >
+          Cancel
+        </button>
+        <button
+          id="verifyRewardButton"
+          class="px-4 py-2 text-white bg-orange-500 rounded hover:bg-orange-600"
+        >
+          Verify
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1094,18 +1178,20 @@
               <!-- Status updates -->
               ${
                 appointment.status_updates && appointment.status_updates.length
-                  ? appointment.status_updates.map((update) => {
-                      // Debugging: Log the status of each update
-                      console.log("Update Status:", update.status);
+                  ? appointment.status_updates
+                      .map((update) => {
+                        // Debugging: Log the status of each update
+                        console.log("Update Status:", update.status);
 
-                      // Status specific styling
-                      const statusColors = {
-                        pending: "bg-yellow-500",
-                        confirmed: "bg-green-500",
-                        completed: "bg-blue-500",
-                        cancelled: "bg-red-500",
-                      };
-                      const dotColor = statusColors[update.status] || "bg-gray-500";
+                        // Status specific styling
+                        const statusColors = {
+                          pending: "bg-yellow-500",
+                          confirmed: "bg-green-500",
+                          completed: "bg-blue-500",
+                          cancelled: "bg-red-500",
+                        };
+                        const dotColor =
+                          statusColors[update.status] || "bg-gray-500";
 
                         // Format timestamp
                         let displayDate;
@@ -1662,5 +1748,144 @@
   window.closeAppointmentModal = function () {
     document.getElementById("appointment-modal").classList.add("hidden");
   };
+
+  // Add after your existing business card setup
+  document.querySelectorAll(".business-card").forEach((card) => {
+    const businessId = card.getAttribute("data-id");
+    const businessActions = card.querySelector(".business-actions");
+
+    if (businessActions) {
+      const verifyButton = document.createElement("button");
+      verifyButton.className =
+        "verify-reward px-3 py-1 bg-green-100 text-green-700 rounded-full hover:bg-green-200";
+      verifyButton.innerHTML =
+        '<i class="mr-1 fas fa-check"></i> Verify Reward';
+      verifyButton.setAttribute("data-id", businessId);
+      businessActions.appendChild(verifyButton);
+
+      verifyButton.addEventListener("click", () => {
+        document.getElementById("verifyRewardModal").classList.remove("hidden");
+        currentBusinessId = businessId;
+      });
+    }
+  });
+
+  // Add verification handling
+  document
+    .getElementById("closeVerifyRewardModal")
+    .addEventListener("click", () => {
+      document.getElementById("verifyRewardModal").classList.add("hidden");
+      document.getElementById("verificationResult").classList.add("hidden");
+      document.getElementById("rewardCode").value = "";
+    });
+
+  document
+    .getElementById("verifyRewardButton")
+    .addEventListener("click", () => {
+      const code = document.getElementById("rewardCode").value.trim();
+      if (!code) {
+        alert("Please enter a redemption code");
+        return;
+      }
+
+      // Get CSRF token
+      const csrfToken = document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content");
+
+      // Verify the code
+      fetch("/api/verify-reward-code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken || "",
+        },
+        body: JSON.stringify({
+          code: code,
+          business_id: currentBusinessId,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          const resultDiv = document.getElementById("verificationResult");
+          resultDiv.classList.remove("hidden");
+
+          if (data.valid) {
+            resultDiv.innerHTML = `
+          <div class="p-3 border border-green-200 rounded bg-green-50">
+            <p class="font-medium text-green-700">✅ Valid Redemption</p>
+            <p class="mt-1 text-sm">Customer: ${data.user_email}</p>
+            <p class="text-sm">Reward: ${data.reward}</p>
+            <p class="mt-2 text-xs text-green-600">Redeem now?</p>
+            <div class="mt-2">
+              <button id="confirmRedemption" class="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600">
+                Mark as Redeemed
+              </button>
+            </div>
+          </div>
+        `;
+
+            document
+              .getElementById("confirmRedemption")
+              .addEventListener("click", () => {
+                // Mark as redeemed
+                fetch("/api/mark-reward-redeemed", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-Token": csrfToken || "",
+                  },
+                  body: JSON.stringify({
+                    code: code,
+                    business_id: currentBusinessId,
+                  }),
+                })
+                  .then((response) => response.json())
+                  .then((result) => {
+                    if (result.success) {
+                      alert("Reward successfully marked as redeemed!");
+                      document
+                        .getElementById("verifyRewardModal")
+                        .classList.add("hidden");
+                      document.getElementById("rewardCode").value = "";
+                      document
+                        .getElementById("verificationResult")
+                        .classList.add("hidden");
+                    } else {
+                      alert(
+                        "Error: " +
+                          (result.error || "Failed to mark reward as redeemed")
+                      );
+                    }
+                  })
+                  .catch((error) => {
+                    console.error("Error:", error);
+                    alert("An error occurred while processing the redemption");
+                  });
+              });
+          } else {
+            resultDiv.innerHTML = `
+          <div class="p-3 border border-red-200 rounded bg-red-50">
+            <p class="font-medium text-red-700">❌ Invalid Code</p>
+            <p class="mt-1 text-sm">${
+              data.error || "This code is not valid or has already been used."
+            }</p>
+          </div>
+        `;
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          document.getElementById("verificationResult").innerHTML = `
+        <div class="p-3 border border-red-200 rounded bg-red-50">
+          <p class="font-medium text-red-700">❌ Error</p>
+          <p class="mt-1 text-sm">An error occurred while verifying the code.</p>
+        </div>
+      `;
+          document
+            .getElementById("verificationResult")
+            .classList.remove("hidden");
+        });
+    });
 </script>
 {% endblock %}

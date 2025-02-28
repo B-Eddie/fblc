@@ -24,7 +24,11 @@
     <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
     <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
     <script src="https://js.api.here.com/v3/3.1/mapsjs-clustering.js"></script>
-    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='favicon.png') }}"
+      type="image/png"
+    />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <link
       rel="stylesheet"
@@ -69,13 +73,13 @@
     <nav class="bg-orange-600 shadow-md" x-data="{ open: false }">
       <div class="px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div class="flex items-center justify-between">
-            <a href="{{ url_for('index') }}" class="flex items-center">
-            <img 
-              src="{{ url_for('static', filename='logo.png') }}" 
-              alt="HealthHub Connect Logo" 
+          <a href="{{ url_for('index') }}" class="flex items-center">
+            <img
+              src="{{ url_for('static', filename='logo.png') }}"
+              alt="HealthHub Connect Logo"
               class="h-10"
             />
-            </a>
+          </a>
           <!-- Desktop Menu -->
           <div class="hidden space-x-6 md:flex">
             {% if current_user.is_authenticated %}
@@ -183,6 +187,28 @@
                 ></path>
               </svg>
               Manage Business
+            </a>
+            <a
+              href="{{ url_for('my_loyalty') }}"
+              class="block px-3 py-2 text-orange-700 rounded-md hover:bg-orange-100 {% if request.path == '/my-loyalty' %}bg-orange-100 font-semibold{% endif %}"
+            >
+              <div class="flex items-center">
+                <svg
+                  class="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 8v13m0-13V6a4 4 0 112.76 3.77c.08-.65.14-1.3.14-1.7A4.5 4.5 0 0010 3.5c-.5 0-1.33.08-2.34.23L7 11c-.7.13-1.4.37-2 .72m10 3.28V21M3 16c-.55 0-1 .45-1 1s.45 1 1 1h16c.55 0 1-.45 1-1s-.45-1-1-1H3z"
+                  ></path>
+                </svg>
+                My Rewards
+              </div>
             </a>
             <a
               href="{{ url_for('logout') }}"
@@ -406,6 +432,28 @@
               ></path>
             </svg>
             Manage Business
+          </a>
+          <a
+            href="{{ url_for('my_loyalty') }}"
+            class="block px-3 py-2 text-orange-700 rounded-md hover:bg-orange-100 {% if request.path == '/my-loyalty' %}bg-orange-100 font-semibold{% endif %}"
+          >
+            <div class="flex items-center">
+              <svg
+                class="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8v13m0-13V6a4 4 0 112.76 3.77c.08-.65.14-1.3.14-1.7A4.5 4.5 0 0010 3.5c-.5 0-1.33.08-2.34.23L7 11c-.7.13-1.4.37-2 .72m10 3.28V21M3 16c-.55 0-1 .45-1 1s.45 1 1 1h16c.55 0 1-.45 1-1s-.45-1-1-1H3z"
+                ></path>
+              </svg>
+              My Rewards
+            </div>
           </a>
           <a
             href="{{ url_for('logout') }}"

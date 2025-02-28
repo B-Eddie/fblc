@@ -86,6 +86,151 @@
       });
     </script>
 
+    <div class="mt-8 mb-6">
+      <h3 class="mb-4 text-xl font-semibold text-orange-600">
+        Loyalty Program
+      </h3>
+
+      <div class="p-6 border border-orange-200 rounded-lg bg-orange-50">
+        <div class="mb-4">
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="loyalty_enabled"
+              name="loyalty_enabled"
+              class="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+              {%
+              if
+              business.loyalty_enabled
+              %}checked{%
+              endif
+              %}
+            />
+            <label
+              for="loyalty_enabled"
+              class="ml-2 text-sm font-medium text-gray-700"
+            >
+              Enable Loyalty Program
+            </label>
+          </div>
+          <p class="mt-1 text-xs text-gray-500">
+            Let customers earn rewards for repeat visits to your business
+          </p>
+        </div>
+
+        <div
+          id="loyalty_settings"
+          class="{% if not business.loyalty_enabled %}hidden{% endif %}"
+        >
+          <div class="mb-4">
+            <label
+              class="block mb-2 text-sm font-bold text-gray-700"
+              for="loyalty_visits_required"
+            >
+              Visits Required for Reward
+            </label>
+            <input
+              class="w-32 px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
+              id="loyalty_visits_required"
+              name="loyalty_visits_required"
+              type="number"
+              min="1"
+              max="100"
+              value="{{ business.loyalty_visits_required or 10 }}"
+            />
+            <p class="mt-1 text-xs text-gray-500">
+              Number of visits a customer needs to make before earning a reward
+            </p>
+          </div>
+
+          <div class="mb-4">
+            <label
+              class="block mb-2 text-sm font-bold text-gray-700"
+              for="loyalty_reward"
+            >
+              Reward Description
+            </label>
+            <input
+              class="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
+              id="loyalty_reward"
+              name="loyalty_reward"
+              type="text"
+              placeholder="e.g., Free coffee, 20% discount, etc."
+              value="{{ business.loyalty_reward or '' }}"
+            />
+            <p class="mt-1 text-xs text-gray-500">
+              Describe the reward that customers will receive
+            </p>
+          </div>
+
+          <div class="mb-4">
+            <label
+              class="block mb-2 text-sm font-bold text-gray-700"
+              for="loyalty_message"
+            >
+              Custom Message (Optional)
+            </label>
+            <textarea
+              class="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
+              id="loyalty_message"
+              name="loyalty_message"
+              rows="2"
+              placeholder="e.g., Thank you for your loyalty! Enjoy your reward."
+            >
+{{ business.loyalty_message or '' }}</textarea
+            >
+            <p class="mt-1 text-xs text-gray-500">
+              A message to display when customers earn or redeem rewards
+            </p>
+          </div>
+
+          <!-- Preview of loyalty card -->
+          <div class="mt-6">
+            <h4 class="mb-2 text-sm font-medium text-gray-700">
+              Loyalty Card Preview
+            </h4>
+            <div
+              class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm"
+            >
+              <div class="flex items-center justify-between mb-4">
+                <h5
+                  class="text-lg font-bold text-orange-600"
+                  id="preview_business_name"
+                >
+                  {{ business.name }}
+                </h5>
+                <div class="text-xs text-gray-500">Loyalty Card</div>
+              </div>
+
+              <div class="mb-3">
+                <div class="mb-2 text-sm text-gray-700">
+                  Progress: <span id="preview_progress">0</span>/<span
+                    id="preview_required"
+                    >{{ business.loyalty_visits_required or 10 }}</span
+                  >
+                  visits
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    class="bg-orange-500 h-2.5 rounded-full"
+                    style="width: 0%"
+                  ></div>
+                </div>
+              </div>
+
+              <div class="text-sm font-medium text-gray-800">
+                Reward:
+                <span id="preview_reward"
+                  >{{ business.loyalty_reward or 'Your reward description'
+                  }}</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="flex items-center justify-between">
       <button
         class="px-4 py-2 font-bold text-white transition duration-300 bg-orange-500 rounded hover:bg-orange-600 focus:outline-none focus:shadow-outline"
@@ -250,6 +395,35 @@
             suggestionsList.classList.add("hidden");
             break;
         }
+      });
+
+      const loyaltyEnabledCheckbox = document.getElementById("loyalty_enabled");
+      const loyaltySettingsDiv = document.getElementById("loyalty_settings");
+      const visitsRequiredInput = document.getElementById(
+        "loyalty_visits_required"
+      );
+      const rewardInput = document.getElementById("loyalty_reward");
+
+      // Preview elements
+      const previewRequired = document.getElementById("preview_required");
+      const previewReward = document.getElementById("preview_reward");
+
+      // Handle loyalty program toggle
+      loyaltyEnabledCheckbox.addEventListener("change", function () {
+        if (this.checked) {
+          loyaltySettingsDiv.classList.remove("hidden");
+        } else {
+          loyaltySettingsDiv.classList.add("hidden");
+        }
+      });
+
+      // Update preview when settings change
+      visitsRequiredInput.addEventListener("input", function () {
+        previewRequired.textContent = this.value;
+      });
+
+      rewardInput.addEventListener("input", function () {
+        previewReward.textContent = this.value || "Your reward description";
       });
     });
   </script>

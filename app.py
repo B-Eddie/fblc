@@ -26,7 +26,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key')
 csrf = CSRFProtect(app)
 
 # Initialize Firebase
-cred = credentials.Certificate("fblc/firebaseconfig.json")
+cred = credentials.Certificate("firebaseconfig.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -226,7 +226,6 @@ def dashboard():
         news_data = response.json()
         articles = news_data.get('articles', [])
         latest_news = articles[:5]  # Limit to top 5 articles
-        print(news_data)  # Debugging: Print full API response
 
     except Exception as e:
         print(f"Error fetching news: {e}")

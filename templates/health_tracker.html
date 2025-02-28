@@ -110,6 +110,10 @@
         .then((response) => response.json())
         .then((data) => {
           const ctx = document.getElementById("healthChart").getContext("2d");
+          if (ctx) {
+          ctx.destroy();
+          ctx = null;
+        }
           new Chart(ctx, {
             type: "line",
             data: {

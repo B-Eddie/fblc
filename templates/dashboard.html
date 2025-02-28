@@ -53,11 +53,11 @@
                 }} {% endif %}
               </span>
             </div>
-            <span>{{ appointment.doctor_name }} - {{ appointment.type }}</span>
-            <span class="text-sm text-orange-600"
+            <span>{{ appointment.appointment_type }}</span>
+            <!-- <span class="text-sm text-orange-600"
               >{{ appointment.formatted_date }} at {{ appointment.formatted_time
               }}</span
-            >
+            > -->
           </li>
           {% endfor %}
         </ul>

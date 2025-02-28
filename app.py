@@ -273,8 +273,35 @@ def appointments():
 @login_required
 def find_providers():
     providers = db.collection('providers').where('verified', '==', True).stream()
-    return render_template('find_providers.html', providers=providers)
-    # return render_template('find_providers.html')
+    # Get provider data
+    providers_list = []
+    for provider in providers:
+        providers_list.append(provider.to_dict())
+    
+    # Count specialties
+    specialty_counts = {}
+    for provider in providers_list:
+        specialty = provider.get('specialty')
+        if specialty:
+            specialty_counts[specialty] = specialty_counts.get(specialty, 0) + 1
+    
+    # Sort specialties by count and get top 5
+    top_specialties_query = sorted(
+        specialty_counts.items(), 
+        key=lambda x: x[1], 
+        reverse=True
+    )[:5]
+    
+    # Convert query results to a list of specialty names
+    top_specialties = [specialty for specialty, count in top_specialties_query if specialty]
+    
+    # Add some default specialties if the database doesn't have enough data
+    default_specialties = ['Primary Care', 'Cardiology', 'Dermatology', 'Pediatrics', 'Orthopedics']
+    if len(top_specialties) < 5:
+        remaining_defaults = [s for s in default_specialties if s not in top_specialties]
+        top_specialties.extend(remaining_defaults[:5-len(top_specialties)])
+    
+    return render_template('find_providers.html', top_specialties=top_specialties, providers=providers)
 
 @app.route('/book_appointment', methods=['GET', 'POST'])
 @login_required

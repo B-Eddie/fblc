@@ -12,36 +12,14 @@
       >
         All
       </button>
+      {% for specialty in top_specialties %}
       <button
-        id="filterDentist"
+        id="filter{{ specialty|replace(' ', '') }}"
         class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
       >
-        Dentist
+        {{ specialty }}
       </button>
-      <button
-        id="filterOptometrist"
-        class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
-      >
-        Optometrist
-      </button>
-      <button
-        id="filterGP"
-        class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
-      >
-        General Practitioner
-      </button>
-      <button
-        id="filterPediatrician"
-        class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
-      >
-        Pediatrician
-      </button>
-      <button
-        id="filterDermatologist"
-        class="px-4 py-2 font-bold text-orange-800 transition duration-300 bg-orange-100 rounded-full hover:bg-orange-200"
-      >
-        Dermatologist
-      </button>
+      {% endfor %}
     </div>
     <div class="flex items-center gap-4">
       <label for="sortDistance" class="font-medium text-orange-800"

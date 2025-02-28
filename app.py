@@ -26,7 +26,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key')
 csrf = CSRFProtect(app)
 
 # Initialize Firebase
-cred = credentials.Certificate("firebaseconfig.json")
+cred = credentials.Certificate("fblc/firebaseconfig.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -38,6 +38,10 @@ load_dotenv()
 FIREBASE_API_KEY = os.getenv('FIREBASE_API_KEY')
 if not FIREBASE_API_KEY:
     raise ValueError("FIREBASE_API_KEY not found in environment variables")
+
+NEWS_API_KEY = os.getenv('NEWS_API_KEY')
+if not NEWS_API_KEY:
+    raise ValueError("NEWS_API_KEY not found in environment variables")
 
 class User(UserMixin):
     def __init__(self, uid, email, name, language):
@@ -176,10 +180,10 @@ def logout():
 def dashboard():
     # Process appointments into dictionaries with formatted dates
     appointments_query = (db.collection('appointments')
-                        .where('user_id', '==', current_user.id)
-                        .order_by('date')
-                        .limit(5)
-                        .stream())
+                         .where('user_id', '==', current_user.id)
+                         .order_by('date')
+                         .limit(5)
+                         .stream())
     
     appointments = []
     for appt in appointments_query:
@@ -213,9 +217,27 @@ def dashboard():
         
         appointments.append(appt_data)
 
-    return render_template('dashboard.html', 
-                         appointments=appointments, 
-                         current_time=datetime.now())
+    # Fetch latest health news
+    try:
+        response = requests.get(
+            f"https://newsapi.org/v2/everything?q=health&language=en&sortBy=publishedAt&apiKey={NEWS_API_KEY}"
+        )
+        response.raise_for_status()  # Raises an exception for HTTP errors
+        news_data = response.json()
+        articles = news_data.get('articles', [])
+        latest_news = articles[:5]  # Limit to top 5 articles
+        print(news_data)  # Debugging: Print full API response
+
+    except Exception as e:
+        print(f"Error fetching news: {e}")
+        latest_news = []  # Fallback to empty list on failure
+
+    return render_template('dashboard.html',
+                           appointments=appointments,
+                           current_time=datetime.now(),
+                           latest_news=latest_news)
+
+
 
 @app.route('/appointments')
 @login_required

@@ -22,14 +22,14 @@
 									<a href="#menu" class="menuToggle"><span>Menu</span></a>
 									<div id="menu">
 										<ul>
-											<li><a href="index">Home</a></li>
-											<li><a href="dashboard">Dashboard</a></li>
-											<li><a href="find_providers">Find Providers</a></li>
-											<li><a href="appointments">Appointments</a></li>
-											<li><a href="health_tracker">Health Tracker</a></li>
-											<li><a href="manage_business">Manage Business</a></li>
-											<li><a href="auth/register">Sign Up</a></li>
-											<li><a href="auth/login">Log In</a></li>
+											<li><a href="{{ url_for('index') }}">Home</a></li>
+											<li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+											<li><a href="{{ url_for('find_providers') }}">Find Providers</a></li>
+											<li><a href="{{ url_for('appointments') }}">Appointments</a></li>
+											<li><a href="{{ url_for('health_tracker') }}">Health Tracker</a></li>
+											<li><a href="{{ url_for('manage_business') }}">Manage Business</a></li>
+											<li><a href="{{ url_for('register') }}">Sign Up</a></li>
+											<li><a href="{{ url_for('login') }}">Log In</a></li>
 										</ul>
 									</div>
 								</li>
@@ -45,7 +45,7 @@
 							Manage your business<br/>
 							Track your health</p>
 							<ul class="actions special">
-								<li><a href="auth/register" class="button primary">Get Started</a></li>
+								<li><a href="{{ url_for('register') }}" class="button primary">Get Started</a></li>
 							</ul>
 						</div>
 						<a href="#features" class="more scrolly">Discover More</a>

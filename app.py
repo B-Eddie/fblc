@@ -890,7 +890,6 @@ def get_provider_ratings(provider_id):
 def get_provider_reviews(provider_id):
     """Get all reviews for a provider"""
     try:
-        print('running')
         # Check if provider exists
         provider_ref = db.collection('providers').document(provider_id)
         if not provider_ref.get().exists:
@@ -913,7 +912,6 @@ def get_provider_reviews(provider_id):
                 }
             
             reviews.append(review_data)
-        print("review", reviews)
         return jsonify(reviews)
     except Exception as e:
         app.logger.error(f"Error getting provider reviews: {str(e)}")

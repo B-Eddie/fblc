@@ -1220,7 +1220,7 @@ def get_user_loyalty(business_id):
         loyalty_ref = db.collection('loyalty').document(f"{current_user.id}_{business_id}")
         loyalty_doc = loyalty_ref.get()
         
-        if not loyalty_doc.exists:
+        if not loyalty_doc.exists():
             # Create new loyalty document for user if it doesn't exist
             loyalty_data = {
                 'user_id': current_user.id,
@@ -1363,7 +1363,7 @@ def redeem_loyalty_reward(business_id):
         loyalty_ref = db.collection('loyalty').document(f"{user_id}_{business_id}")
         loyalty_doc = loyalty_ref.get()
         
-        if not loyalty_doc.exists:
+        if not loyalty_doc.exists():
             return jsonify({'error': 'No loyalty record found for this user'}), 404
             
         loyalty_data = loyalty_doc.to_dict()
@@ -1746,7 +1746,7 @@ def redeem_reward(business_id):
         loyalty_ref = db.collection('loyalty').document(f"{current_user.id}_{business_id}")
         loyalty_doc = loyalty_ref.get()
         
-        if not loyalty_doc.exists:
+        if not loyalty_doc.exists():
             flash('You do not have a loyalty record with this business')
             return redirect(url_for('my_loyalty'))
             
@@ -2155,8 +2155,20 @@ def admin_dashboard():
 @login_required
 def api_provider_appointments(provider_id):
     try:
-        # Fetch all appointments for this provider
-        appointments = db.collection('appointments').where('provider_id', '==', provider_id).stream()
+        date = request.args.get('date')
+        status = request.args.get('status', None)  # Get status parameter with None as default
+        
+        query = db.collection('appointments').where('provider_id', '==', provider_id)
+        
+        # Filter by date if provided
+        if date:
+            query = query.where('date', '==', date)
+        
+        # Filter by status if provided (e.g. 'confirmed')
+        if status:
+            query = query.where('status', '==', status)
+            
+        appointments = query.stream()
         
         appointment_list = []
         for appt in appointments:
@@ -2165,6 +2177,7 @@ def api_provider_appointments(provider_id):
                 'id': appt.id,
                 'date': appt_data.get('date'),
                 'time': appt_data.get('time'),
+                'type': appt_data.get('appointment_type'),  # Include appointment type
                 'status': appt_data.get('status'),
                 'user_id': appt_data.get('user_id'),
                 # Don't include sensitive data like user details

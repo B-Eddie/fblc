@@ -842,13 +842,88 @@
                 <p>Visit ${
                   provider.loyalty_visits_required || 10
                 } times to earn: ${provider.loyalty_reward || "a reward"}</p>
-                <button class="mt-1 text-xs font-medium text-orange-600 view-loyalty" data-id="${
+                <button class="mt-1 text-xs font-medium text-orange-600 view-loyalty" onclick="window.location.href='{{ url_for('my_loyalty') }}'; return false;"  data-id="${
                   provider.id
                 }">View your progress</button>
               </div>
             </div>
           `
             : "";
+
+          // Generate inclusive care badges
+          const inclusiveBadges = [];
+          // Add debug logging to see what's happening
+          console.log("Provider inclusive care options:", {
+            lgbtq_friendly: provider.lgbtq_friendly,
+            disability_accessible: provider.disability_accessible,
+            cultural_responsive: provider.cultural_responsive,
+            language_services: provider.language_services,
+            sliding_scale: provider.sliding_scale,
+            trauma_informed: provider.trauma_informed,
+          });
+
+          // Make type conversions more robust
+          if (
+            provider.lgbtq_friendly === true ||
+            provider.lgbtq_friendly === "true" ||
+            provider.lgbtq_friendly === 1
+          ) {
+            inclusiveBadges.push(
+              '<span class="inline-block px-2 py-1 mb-1 mr-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-full">LGBTQ+ Friendly</span>'
+            );
+          }
+          if (
+            provider.disability_accessible === true ||
+            provider.disability_accessible === "true" ||
+            provider.disability_accessible === 1
+          ) {
+            inclusiveBadges.push(
+              '<span class="inline-block px-2 py-1 mb-1 mr-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">Disability-Accessible</span>'
+            );
+          }
+          if (
+            provider.cultural_responsive === true ||
+            provider.cultural_responsive === "true" ||
+            provider.cultural_responsive === 1
+          ) {
+            inclusiveBadges.push(
+              '<span class="inline-block px-2 py-1 mb-1 mr-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">Culturally Responsive</span>'
+            );
+          }
+          if (
+            provider.language_services === true ||
+            provider.language_services === "true" ||
+            provider.language_services === 1
+          ) {
+            inclusiveBadges.push(
+              '<span class="inline-block px-2 py-1 mb-1 mr-1 text-xs font-medium text-yellow-700 bg-yellow-100 rounded-full">Language Services</span>'
+            );
+          }
+          if (
+            provider.sliding_scale === true ||
+            provider.sliding_scale === "true" ||
+            provider.sliding_scale === 1
+          ) {
+            inclusiveBadges.push(
+              '<span class="inline-block px-2 py-1 mb-1 mr-1 text-xs font-medium text-pink-700 bg-pink-100 rounded-full">Sliding Scale</span>'
+            );
+          }
+          if (
+            provider.trauma_informed === true ||
+            provider.trauma_informed === "true" ||
+            provider.trauma_informed === 1
+          ) {
+            inclusiveBadges.push(
+              '<span class="inline-block px-2 py-1 mb-1 mr-1 text-xs font-medium text-indigo-700 bg-indigo-100 rounded-full">Trauma-Informed</span>'
+            );
+          }
+
+          const inclusiveCareBadges =
+            inclusiveBadges.length > 0
+              ? `<div class="flex flex-wrap mb-3">
+              ${inclusiveBadges.join("")}
+            </div>`
+              : "";
 
           card.innerHTML = `
             <div id="${mapPlaceholderId}" class="flex items-center justify-center w-full h-48 bg-gray-100">
@@ -892,6 +967,8 @@
               <div class="mb-3 text-gray-600"><strong>Distance:</strong> <span class="distance-display" data-provider-id="${
                 provider.id
               }">${distanceDisplay}</span></div>
+
+              ${inclusiveCareBadges}
               
               ${loyaltyBadge}
               
@@ -1857,16 +1934,6 @@
 
       // Load provider ratings on initial load
       loadProviderRatings();
-
-      // Add this to the document.addEventListener section to handle loyalty program view
-      document.querySelectorAll(".view-loyalty").forEach((button) => {
-        button.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const providerId = button.getAttribute("data-id");
-          window.location.href = `/my-loyalty?provider=${providerId}`;
-        });
-      });
     });
   </script>
 </div>

@@ -499,13 +499,35 @@ def api_providers():
         except:
             return None
     
-    provider_list = [{
-        'id': doc.id,
-        'name': doc.to_dict()['name'],
-        'specialty': doc.to_dict()['specialty'],
-        'distance': round(geodesic(user_coords, geocode_address(doc.to_dict().get('address', ''))).kilometers, 1) if user_coords and geocode_address(doc.to_dict().get('address', '')) else None,
-        'address': doc.to_dict()['address'],
-    } for doc in providers]
+    provider_list = []
+    for doc in providers:
+        provider_data = doc.to_dict()
+        distance = None
+        
+        if user_coords and geocode_address(provider_data.get('address', '')):
+            distance = round(geodesic(
+                user_coords, 
+                geocode_address(provider_data.get('address', ''))
+            ).kilometers, 1)
+        
+        provider_list.append({
+            'id': doc.id,
+            'name': provider_data.get('name', ''),
+            'specialty': provider_data.get('specialty', ''),
+            'distance': distance,
+            'address': provider_data.get('address', ''),
+            # Include inclusive care options
+            'lgbtq_friendly': provider_data.get('lgbtq_friendly', False),
+            'disability_accessible': provider_data.get('disability_accessible', False),
+            'cultural_responsive': provider_data.get('cultural_responsive', False),
+            'language_services': provider_data.get('language_services', False),
+            'sliding_scale': provider_data.get('sliding_scale', False),
+            'trauma_informed': provider_data.get('trauma_informed', False),
+            # Include loyalty program data
+            'loyalty_enabled': provider_data.get('loyalty_enabled', False),
+            'loyalty_visits_required': provider_data.get('loyalty_visits_required', 10),
+            'loyalty_reward': provider_data.get('loyalty_reward', '')
+        })
     
     return jsonify(provider_list)
 
@@ -543,7 +565,18 @@ def api_provider(provider_id):
             'specialty': provider_data.get('specialty'),
             'address': provider_data.get('address'),
             'phone': provider_data.get('phone'),
-            'coordinates': coordinates  # Add coordinates to response
+            'coordinates': coordinates,
+            # Include inclusive care options
+            'lgbtq_friendly': provider_data.get('lgbtq_friendly', False),
+            'disability_accessible': provider_data.get('disability_accessible', False),
+            'cultural_responsive': provider_data.get('cultural_responsive', False),
+            'language_services': provider_data.get('language_services', False),
+            'sliding_scale': provider_data.get('sliding_scale', False),
+            'trauma_informed': provider_data.get('trauma_informed', False),
+            # Include loyalty program data
+            'loyalty_enabled': provider_data.get('loyalty_enabled', False),
+            'loyalty_visits_required': provider_data.get('loyalty_visits_required', 10),
+            'loyalty_reward': provider_data.get('loyalty_reward', '')
         })
     return jsonify({'error': 'Provider not found'}), 404
 
@@ -721,6 +754,14 @@ def edit_business(business_id):
                     flash('Please provide a reward description for your loyalty program.')
                     return render_template('edit_business.html', form=form, business=business_data, here_api_key=here_api_key)
             
+            # Get inclusive care options from the form
+            lgbtq_friendly = 'lgbtq_friendly' in request.form
+            disability_accessible = 'disability_accessible' in request.form
+            cultural_responsive = 'cultural_responsive' in request.form
+            language_services = 'language_services' in request.form
+            sliding_scale = 'sliding_scale' in request.form
+            trauma_informed = 'trauma_informed' in request.form
+            
             # Update business data
             db.collection('providers').document(business_id).update({
                 'name': request.form.get('name'),
@@ -728,14 +769,23 @@ def edit_business(business_id):
                 'address': request.form.get('address'),
                 'phone': request.form.get('phone'),
                 'updated_at': firestore.SERVER_TIMESTAMP,
+                
                 # Add loyalty settings
                 'loyalty_enabled': loyalty_enabled,
                 'loyalty_visits_required': loyalty_visits_required,
                 'loyalty_reward': loyalty_reward,
-                'loyalty_message': loyalty_message
+                'loyalty_message': loyalty_message,
+                
+                # Add inclusive care options
+                'lgbtq_friendly': lgbtq_friendly,
+                'disability_accessible': disability_accessible,
+                'cultural_responsive': cultural_responsive,
+                'language_services': language_services,
+                'sliding_scale': sliding_scale,
+                'trauma_informed': trauma_informed
             })
             
-            flash('Business information and loyalty program updated successfully!')
+            flash('Business information, loyalty program, and inclusive care options updated successfully!')
             return redirect(url_for('manage_business'))
         except Exception as e:
             flash(f'Error updating business: {e}')
@@ -2100,6 +2150,30 @@ def admin_dashboard():
     ]
     
     return render_template('admin.html', form=form, collections=collections, providers=providers)
+
+@app.route('/api/provider-appointments/<provider_id>')
+@login_required
+def api_provider_appointments(provider_id):
+    try:
+        # Fetch all appointments for this provider
+        appointments = db.collection('appointments').where('provider_id', '==', provider_id).stream()
+        
+        appointment_list = []
+        for appt in appointments:
+            appt_data = appt.to_dict()
+            appointment_list.append({
+                'id': appt.id,
+                'date': appt_data.get('date'),
+                'time': appt_data.get('time'),
+                'status': appt_data.get('status'),
+                'user_id': appt_data.get('user_id'),
+                # Don't include sensitive data like user details
+            })
+        
+        return jsonify(appointment_list)
+    except Exception as e:
+        print(f"Error fetching provider appointments: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=False)

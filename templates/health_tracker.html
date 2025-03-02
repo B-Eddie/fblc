@@ -106,15 +106,15 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
+      let myChart = null;
       fetch("/api/health_data")
         .then((response) => response.json())
         .then((data) => {
           const ctx = document.getElementById("healthChart").getContext("2d");
-          if (ctx) {
-          ctx.destroy();
-          ctx = null;
-        }
-          new Chart(ctx, {
+          if (myChart) {
+            myChart.destroy();
+          }
+          myChart = new Chart(ctx, {
             type: "line",
             data: {
               labels: data.map((item) => item.date),

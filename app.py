@@ -516,7 +516,6 @@ def api_providers():
             'specialty': provider_data.get('specialty', ''),
             'distance': distance,
             'address': provider_data.get('address', ''),
-            'phone': provider_data.get('phone', ''),
             # Include inclusive care options
             'lgbtq_friendly': provider_data.get('lgbtq_friendly', False),
             'disability_accessible': provider_data.get('disability_accessible', False),

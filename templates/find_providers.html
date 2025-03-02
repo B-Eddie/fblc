@@ -1656,8 +1656,9 @@
               errorNotification.style.opacity = "0";
               setTimeout(() => errorNotification.remove(), 500);
             }, 5000);
-
-            // Reset button state
+          })
+          .finally(() => {
+            // Always reset button state regardless of success or failure
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
           });

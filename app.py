@@ -300,7 +300,7 @@ def find_providers():
     providers_list = []
     for provider in providers:
         providers_list.append(provider.to_dict())
-    
+
     # Count specialties
     specialty_counts = {}
     for provider in providers_list:
@@ -324,7 +324,7 @@ def find_providers():
         remaining_defaults = [s for s in default_specialties if s not in top_specialties]
         top_specialties.extend(remaining_defaults[:5-len(top_specialties)])
     
-    return render_template('find_providers.html', top_specialties=top_specialties, providers=providers)
+    return render_template('find_providers.html', top_specialties=top_specialties, providers=providers_list)
 
 @app.route('/book_appointment', methods=['GET', 'POST'])
 @login_required
@@ -516,6 +516,7 @@ def api_providers():
             'specialty': provider_data.get('specialty', ''),
             'distance': distance,
             'address': provider_data.get('address', ''),
+            'phone': provider_data.get('phone', ''),
             # Include inclusive care options
             'lgbtq_friendly': provider_data.get('lgbtq_friendly', False),
             'disability_accessible': provider_data.get('disability_accessible', False),

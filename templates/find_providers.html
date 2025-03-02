@@ -1749,50 +1749,50 @@
           }`;
         });
 
-        // Update star display
-        const starsContainers = document.querySelectorAll(
-          `.stars-container[data-provider-id="${providerId}"]`
-        );
-
-        starsContainers.forEach((container) => {
-          const rating = data.average_rating || 0;
-          container.dataset.rating = rating;
-
-          const stars = container.querySelectorAll(".star");
-          stars.forEach((star, index) => {
-            // Use data-star-index to determine position (1-based)
-            const position = parseInt(star.dataset.starIndex || index + 1);
-
-            // For whole stars
-            if (position <= Math.floor(rating)) {
-              star.setAttribute("fill", "currentColor");
-              star.setAttribute("stroke", "none");
+        async function loadProviderReviews(providerId) {
+          try {
+            const response = await fetch(`/api/provider-reviews/${providerId}`);
+            const data = await response.json();
+            
+            if (data.error) {
+              console.error("Error fetching reviews:", data.error);
+              return;
             }
-            // For partial star
-            else if (position === Math.floor(rating) + 1 && rating % 1 > 0) {
-              const percentage = (rating % 1) * 100;
-              star.innerHTML = `
-                <defs>
-                  <linearGradient id="partialFill-${providerId}-${position}" x1="0" x2="1" y1="0" y2="0">
-                    <stop offset="${rating % 1}" stop-color="currentColor" />
-                    <stop offset="${
-                      rating % 1
-                    }" stop-color="transparent" stop-opacity="0" />
-                  </linearGradient>
-                </defs>
-                <path fill="url(#partialFill-${providerId}-${position})"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-              `;
-            }
-            // Empty stars
-            else {
-              star.setAttribute("fill", "none");
-              star.setAttribute("stroke", "currentColor");
-            }
-          });
+
+            // Extract rating and review count
+            const averageRating = data.average_rating || 0;
+            const reviewCount = data.review_count || 0;
+
+            // Select elements based on provider ID
+            const starsContainer = document.querySelector(`.stars-container[data-provider-id="${providerId}"]`);
+            const ratingElement = document.querySelector(`.provider-rating[data-provider-id="${providerId}"]`);
+            const reviewCountElement = document.querySelector(`.review-count[data-provider-id="${providerId}"]`);
+
+            // Update rating text
+            ratingElement.textContent = averageRating.toFixed(1);
+            reviewCountElement.textContent = `${reviewCount} review${reviewCount !== 1 ? 's' : ''}`;
+
+            // Generate stars
+            const filledStars = Math.round(averageRating);
+            starsContainer.innerHTML = Array(5)
+              .fill()
+              .map((_, i) =>
+                i < filledStars
+                  ? '<span class="text-orange-400 star">★</span>'
+                  : '<span class="text-gray-300 star">★</span>'
+              )
+              .join("");
+          } catch (error) {
+            console.error("Error loading provider reviews:", error);
+          }
+        }
+
+        // Example: Call function for a provider (Replace with dynamic provider ID)
+        document.addEventListener("DOMContentLoaded", () => {
+          const providerId = "provider123"; // Replace with actual provider ID
+          loadProviderReviews(providerId);
         });
+
       }
 
       // Fill stars based on rating

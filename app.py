@@ -26,7 +26,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key')
 csrf = CSRFProtect(app)
 
 # Initialize Firebase
-cred = credentials.Certificate("firebaseconfig.json")
+cred = credentials.Certificate("fblc/firebaseconfig.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -1083,25 +1083,40 @@ def get_provider_reviews(provider_id):
         provider_ref = db.collection('providers').document(provider_id)
         if not provider_ref.get().exists:
             return jsonify({'error': 'Provider not found'}), 404
-        
+
         # Get reviews from the reviews collection
         reviews_query = db.collection('reviews').where('provider_id', '==', provider_id).stream()
         
         reviews = []
+        total_rating = 0
+        review_count = 0
+        
         for review in reviews_query:
             review_data = review.to_dict()
             review_data['id'] = review.id
             
+            # Calculate total rating
+            if 'rating' in review_data:
+                total_rating += review_data['rating']
+                review_count += 1
+            
             # Format timestamp if needed
             if 'created_at' in review_data and hasattr(review_data['created_at'], 'seconds'):
-                # Convert Firestore timestamp to ISO format string
                 review_data['created_at'] = {
                     'seconds': review_data['created_at'].seconds,
                     'nanoseconds': review_data['created_at'].nanoseconds
                 }
-            
+
             reviews.append(review_data)
-        return jsonify(reviews)
+
+        # Calculate average rating
+        average_rating = round(total_rating / review_count, 1) if review_count > 0 else 0
+
+        return jsonify({
+            'reviews': reviews,
+            'average_rating': average_rating,
+            'review_count': review_count
+        })
     except Exception as e:
         app.logger.error(f"Error getting provider reviews: {str(e)}")
         return jsonify({'error': 'An error occurred while fetching reviews'}), 500

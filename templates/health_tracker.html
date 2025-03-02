@@ -5,7 +5,7 @@
   <h1 class="mb-8 text-3xl font-bold text-orange-600">Health Tracker</h1>
 
   <div class="grid gap-8 md:grid-cols-2">
-    <div class="p-4 border border-orange-200 rounded-lg shadow-lg bg-accent">
+    <div class="p-4 border border-orange-200 rounded-lg shadow-lg bg-accent" style="max-width: 85vw;">
       <h2 class="mb-4 text-xl font-semibold text-orange-700">
         Add Today's Health Data
       </h2>
@@ -63,7 +63,7 @@
       </form>
     </div>
 
-    <div class="p-4 border border-orange-200 rounded-lg shadow-lg bg-accent">
+    <div class="p-4 border border-orange-200 rounded-lg shadow-lg bg-accent" style="max-width: 85vw;">
       <h2 class="mb-4 text-xl font-semibold text-orange-700">
         Your Health Today
       </h2>
@@ -71,9 +71,7 @@
         {% if health %}
         <div class="grid grid-cols-3 gap-4 text-center">
           <div>
-            <p class="text-2xl font-bold text-orange-600">
-              {{ health.steps }}
-            </p>
+            <p class="text-2xl font-bold text-orange-600">{{ health.steps }}</p>
             <p class="text-gray-600">Steps</p>
           </div>
           <div>
@@ -97,7 +95,15 @@
         <h2 class="mb-4 text-lg font-semibold text-orange-700">
           Health Data Visualization
         </h2>
-        <div class="p-4" style="position: relative; height:400px;">
+        <div
+          class="p-2 overflow-hidden sm:p-3 md:p-4"
+          style="
+            position: relative;
+            height: 250px;
+            min-height: 200px;
+            max-height: 60vh;
+          "
+        >
           <canvas id="healthChart"></canvas>
         </div>
       </div>
@@ -105,16 +111,22 @@
   </div>
 
   <script>
+    // Create a global variable to store the chart instance
+    let healthChart;
+
     document.addEventListener("DOMContentLoaded", function () {
-      let myChart = null;
       fetch("/api/health_data")
         .then((response) => response.json())
         .then((data) => {
           const ctx = document.getElementById("healthChart").getContext("2d");
-          if (myChart) {
-            myChart.destroy();
+
+          // If we already have a chart, destroy it first
+          if (healthChart) {
+            healthChart.destroy();
           }
-          myChart = new Chart(ctx, {
+
+          // Create a new chart
+          healthChart = new Chart(ctx, {
             type: "line",
             data: {
               labels: data.map((item) => item.date),
@@ -124,31 +136,103 @@
                   data: data.map((item) => item.steps),
                   borderColor: "rgb(255, 99, 132)",
                   tension: 0.1,
+                  borderWidth: 2,
                 },
                 {
                   label: "Calories",
                   data: data.map((item) => item.calories),
                   borderColor: "rgb(54, 162, 235)",
                   tension: 0.1,
+                  borderWidth: 2,
                 },
                 {
                   label: "Sleep Hours",
                   data: data.map((item) => item.sleep_hours),
                   borderColor: "rgb(75, 192, 192)",
                   tension: 0.1,
+                  borderWidth: 2,
                 },
               ],
             },
             options: {
               responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: window.innerWidth < 500 ? "bottom" : "top",
+                  align: "start",
+                  labels: {
+                    boxWidth: 12,
+                    font: {
+                      size: window.innerWidth < 500 ? 10 : 12,
+                    },
+                  },
+                },
+                tooltip: {
+                  bodyFont: {
+                    size: window.innerWidth < 500 ? 10 : 12,
+                  },
+                  titleFont: {
+                    size: window.innerWidth < 500 ? 10 : 12,
+                  },
+                },
+              },
               scales: {
+                x: {
+                  ticks: {
+                    // Automatically size based on container
+                    autoSkip: true,
+                    maxRotation: 45,
+                    minRotation: 0,
+                    font: {
+                      size: window.innerWidth < 500 ? 8 : 10,
+                    },
+                  },
+                  grid: {
+                    display: window.innerWidth > 500,
+                  },
+                },
                 y: {
                   beginAtZero: true,
+                  ticks: {
+                    font: {
+                      size: window.innerWidth < 500 ? 8 : 10,
+                    },
+                  },
+                  grid: {
+                    display: true,
+                  },
                 },
               },
             },
           });
+        })
+        .catch((error) => {
+          console.error("Error loading health data:", error);
         });
+    });
+
+    // Add this after the chart initialization
+    window.addEventListener("resize", function () {
+      if (healthChart) {
+        // Update legend position based on screen size
+        healthChart.options.plugins.legend.position =
+          window.innerWidth < 500 ? "bottom" : "top";
+
+        // Update font sizes
+        healthChart.options.plugins.legend.labels.font.size =
+          window.innerWidth < 500 ? 10 : 12;
+        healthChart.options.scales.x.ticks.font.size =
+          window.innerWidth < 500 ? 8 : 10;
+        healthChart.options.scales.y.ticks.font.size =
+          window.innerWidth < 500 ? 8 : 10;
+
+        // Show/hide grid lines based on screen size
+        healthChart.options.scales.x.grid.display = window.innerWidth > 500;
+
+        // Update the chart
+        healthChart.update();
+      }
     });
   </script>
 </div>

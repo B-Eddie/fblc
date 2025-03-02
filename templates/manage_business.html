@@ -694,7 +694,9 @@
             (appointment.client_name &&
               appointment.client_name.toLowerCase().includes(searchValue)) ||
             (appointment.appointment_type &&
-              appointment.appointment_type.toLowerCase().includes(searchValue)) ||
+              appointment.appointment_type
+                .toLowerCase()
+                .includes(searchValue)) ||
             (appointment.notes &&
               appointment.notes.toLowerCase().includes(searchValue));
         }
@@ -1645,14 +1647,33 @@
     // Initialize FullCalendar
     let calendarEl = document.getElementById("calendar");
     if (calendarEl) {
+      // Check if we're on a mobile device
+      function isMobileDevice() {
+        return window.innerWidth < 768; // Common breakpoint for mobile
+      }
+
+      // Set the appropriate headerToolbar based on device
+      function getHeaderToolbarConfig() {
+        if (isMobileDevice()) {
+          return {
+            left: "prev,next today",
+            center: "title",
+            right: "listMonth", // Only show list view on mobile
+          };
+        } else {
+          return {
+            left: "prev,next today",
+            center: "title",
+            right: "dayGridMonth,timeGridWeek,listMonth", // Show all options on desktop
+          };
+        }
+      }
+
+      // Initialize the calendar with responsive configuration
       let calendarInstance = new FullCalendar.Calendar(calendarEl, {
-        initialView: "dayGridMonth",
+        initialView: isMobileDevice() ? "listMonth" : "dayGridMonth",
         height: "auto",
-        headerToolbar: {
-          left: "prev,next today",
-          center: "title",
-          right: "dayGridMonth,timeGridWeek,listMonth",
-        },
+        headerToolbar: getHeaderToolbarConfig(),
         views: {
           dayGrid: {
             dayMaxEventRows: 3,
@@ -1690,6 +1711,19 @@
               return ["border-gray-500", "bg-gray-100", "text-gray-800"];
           }
         },
+      });
+
+      // Handle window resize to update the view options
+      window.addEventListener("resize", function () {
+        calendarInstance.setOption("headerToolbar", getHeaderToolbarConfig());
+        // If currently in a view not available on this device size, switch to appropriate view
+        if (
+          isMobileDevice() &&
+          (calendarInstance.view.type === "dayGridMonth" ||
+            calendarInstance.view.type === "timeGridWeek")
+        ) {
+          calendarInstance.changeView("listMonth");
+        }
       });
 
       calendarInstance.render();

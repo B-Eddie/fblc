@@ -499,35 +499,13 @@ def api_providers():
         except:
             return None
     
-    provider_list = []
-    for doc in providers:
-        provider_data = doc.to_dict()
-        distance = None
-        
-        if user_coords and geocode_address(provider_data.get('address', '')):
-            distance = round(geodesic(
-                user_coords, 
-                geocode_address(provider_data.get('address', ''))
-            ).kilometers, 1)
-        
-        provider_list.append({
-            'id': doc.id,
-            'name': provider_data.get('name', ''),
-            'specialty': provider_data.get('specialty', ''),
-            'distance': distance,
-            'address': provider_data.get('address', ''),
-            # Include inclusive care options
-            'lgbtq_friendly': provider_data.get('lgbtq_friendly', False),
-            'disability_accessible': provider_data.get('disability_accessible', False),
-            'cultural_responsive': provider_data.get('cultural_responsive', False),
-            'language_services': provider_data.get('language_services', False),
-            'sliding_scale': provider_data.get('sliding_scale', False),
-            'trauma_informed': provider_data.get('trauma_informed', False),
-            # Include loyalty program data
-            'loyalty_enabled': provider_data.get('loyalty_enabled', False),
-            'loyalty_visits_required': provider_data.get('loyalty_visits_required', 10),
-            'loyalty_reward': provider_data.get('loyalty_reward', '')
-        })
+    provider_list = [{
+        'id': doc.id,
+        'name': doc.to_dict()['name'],
+        'specialty': doc.to_dict()['specialty'],
+        'distance': round(geodesic(user_coords, geocode_address(doc.to_dict().get('address', ''))).kilometers, 1) if user_coords and geocode_address(doc.to_dict().get('address', '')) else None,
+        'address': doc.to_dict()['address'],
+    } for doc in providers]
     
     return jsonify(provider_list)
 
@@ -565,18 +543,7 @@ def api_provider(provider_id):
             'specialty': provider_data.get('specialty'),
             'address': provider_data.get('address'),
             'phone': provider_data.get('phone'),
-            'coordinates': coordinates,
-            # Include inclusive care options
-            'lgbtq_friendly': provider_data.get('lgbtq_friendly', False),
-            'disability_accessible': provider_data.get('disability_accessible', False),
-            'cultural_responsive': provider_data.get('cultural_responsive', False),
-            'language_services': provider_data.get('language_services', False),
-            'sliding_scale': provider_data.get('sliding_scale', False),
-            'trauma_informed': provider_data.get('trauma_informed', False),
-            # Include loyalty program data
-            'loyalty_enabled': provider_data.get('loyalty_enabled', False),
-            'loyalty_visits_required': provider_data.get('loyalty_visits_required', 10),
-            'loyalty_reward': provider_data.get('loyalty_reward', '')
+            'coordinates': coordinates  # Add coordinates to response
         })
     return jsonify({'error': 'Provider not found'}), 404
 
@@ -754,14 +721,6 @@ def edit_business(business_id):
                     flash('Please provide a reward description for your loyalty program.')
                     return render_template('edit_business.html', form=form, business=business_data, here_api_key=here_api_key)
             
-            # Get inclusive care options from the form
-            lgbtq_friendly = 'lgbtq_friendly' in request.form
-            disability_accessible = 'disability_accessible' in request.form
-            cultural_responsive = 'cultural_responsive' in request.form
-            language_services = 'language_services' in request.form
-            sliding_scale = 'sliding_scale' in request.form
-            trauma_informed = 'trauma_informed' in request.form
-            
             # Update business data
             db.collection('providers').document(business_id).update({
                 'name': request.form.get('name'),
@@ -769,23 +728,14 @@ def edit_business(business_id):
                 'address': request.form.get('address'),
                 'phone': request.form.get('phone'),
                 'updated_at': firestore.SERVER_TIMESTAMP,
-                
                 # Add loyalty settings
                 'loyalty_enabled': loyalty_enabled,
                 'loyalty_visits_required': loyalty_visits_required,
                 'loyalty_reward': loyalty_reward,
-                'loyalty_message': loyalty_message,
-                
-                # Add inclusive care options
-                'lgbtq_friendly': lgbtq_friendly,
-                'disability_accessible': disability_accessible,
-                'cultural_responsive': cultural_responsive,
-                'language_services': language_services,
-                'sliding_scale': sliding_scale,
-                'trauma_informed': trauma_informed
+                'loyalty_message': loyalty_message
             })
             
-            flash('Business information, loyalty program, and inclusive care options updated successfully!')
+            flash('Business information and loyalty program updated successfully!')
             return redirect(url_for('manage_business'))
         except Exception as e:
             flash(f'Error updating business: {e}')
@@ -1083,40 +1033,25 @@ def get_provider_reviews(provider_id):
         provider_ref = db.collection('providers').document(provider_id)
         if not provider_ref.get().exists:
             return jsonify({'error': 'Provider not found'}), 404
-
+        
         # Get reviews from the reviews collection
         reviews_query = db.collection('reviews').where('provider_id', '==', provider_id).stream()
         
         reviews = []
-        total_rating = 0
-        review_count = 0
-        
         for review in reviews_query:
             review_data = review.to_dict()
             review_data['id'] = review.id
             
-            # Calculate total rating
-            if 'rating' in review_data:
-                total_rating += review_data['rating']
-                review_count += 1
-            
             # Format timestamp if needed
             if 'created_at' in review_data and hasattr(review_data['created_at'], 'seconds'):
+                # Convert Firestore timestamp to ISO format string
                 review_data['created_at'] = {
                     'seconds': review_data['created_at'].seconds,
                     'nanoseconds': review_data['created_at'].nanoseconds
                 }
-
+            
             reviews.append(review_data)
-
-        # Calculate average rating
-        average_rating = round(total_rating / review_count, 1) if review_count > 0 else 0
-
-        return jsonify({
-            'reviews': reviews,
-            'average_rating': average_rating,
-            'review_count': review_count
-        })
+        return jsonify(reviews)
     except Exception as e:
         app.logger.error(f"Error getting provider reviews: {str(e)}")
         return jsonify({'error': 'An error occurred while fetching reviews'}), 500
@@ -1235,7 +1170,7 @@ def get_user_loyalty(business_id):
         loyalty_ref = db.collection('loyalty').document(f"{current_user.id}_{business_id}")
         loyalty_doc = loyalty_ref.get()
         
-        if not loyalty_doc.exists():
+        if not loyalty_doc.exists:
             # Create new loyalty document for user if it doesn't exist
             loyalty_data = {
                 'user_id': current_user.id,
@@ -1378,7 +1313,7 @@ def redeem_loyalty_reward(business_id):
         loyalty_ref = db.collection('loyalty').document(f"{user_id}_{business_id}")
         loyalty_doc = loyalty_ref.get()
         
-        if not loyalty_doc.exists():
+        if not loyalty_doc.exists:
             return jsonify({'error': 'No loyalty record found for this user'}), 404
             
         loyalty_data = loyalty_doc.to_dict()
@@ -1761,7 +1696,7 @@ def redeem_reward(business_id):
         loyalty_ref = db.collection('loyalty').document(f"{current_user.id}_{business_id}")
         loyalty_doc = loyalty_ref.get()
         
-        if not loyalty_doc.exists():
+        if not loyalty_doc.exists:
             flash('You do not have a loyalty record with this business')
             return redirect(url_for('my_loyalty'))
             
@@ -2165,43 +2100,6 @@ def admin_dashboard():
     ]
     
     return render_template('admin.html', form=form, collections=collections, providers=providers)
-
-@app.route('/api/provider-appointments/<provider_id>')
-@login_required
-def api_provider_appointments(provider_id):
-    try:
-        date = request.args.get('date')
-        status = request.args.get('status', None)  # Get status parameter with None as default
-        
-        query = db.collection('appointments').where('provider_id', '==', provider_id)
-        
-        # Filter by date if provided
-        if date:
-            query = query.where('date', '==', date)
-        
-        # Filter by status if provided (e.g. 'confirmed')
-        if status:
-            query = query.where('status', '==', status)
-            
-        appointments = query.stream()
-        
-        appointment_list = []
-        for appt in appointments:
-            appt_data = appt.to_dict()
-            appointment_list.append({
-                'id': appt.id,
-                'date': appt_data.get('date'),
-                'time': appt_data.get('time'),
-                'type': appt_data.get('appointment_type'),  # Include appointment type
-                'status': appt_data.get('status'),
-                'user_id': appt_data.get('user_id'),
-                # Don't include sensitive data like user details
-            })
-        
-        return jsonify(appointment_list)
-    except Exception as e:
-        print(f"Error fetching provider appointments: {e}")
-        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=False)

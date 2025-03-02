@@ -378,6 +378,13 @@
       const closeModal = document.getElementById("closeModal");
       const bookingForm = document.getElementById("bookingForm");
 
+      // Add event listener for distance sorting
+      sortDistance.addEventListener("change", () => {
+        console.log("Sort order changed to:", sortDistance.value);
+        // Re-render providers with new sort order
+        renderProviders(providers);
+      });
+
       // Initialize cache system
       const cache = {
         providers: {},
@@ -903,15 +910,22 @@
 
         // Sort providers by distance if available
         if (sortDistance.value === "asc") {
-          providersToRender.sort(
-            (a, b) => (a.distance || 999) - (b.distance || 999)
-          );
+          console.log("Sorting by nearest first");
+          providersToRender.sort((a, b) => {
+            // Make sure we have valid numbers for comparison
+            const distA = typeof a.distance === 'number' ? a.distance : 999;
+            const distB = typeof b.distance === 'number' ? b.distance : 999;
+            return distA - distB;
+          });
         } else if (sortDistance.value === "desc") {
-          providersToRender.sort(
-            (a, b) => (b.distance || 0) - (a.distance || 0)
-          );
+          console.log("Sorting by farthest first");
+          providersToRender.sort((a, b) => {
+            // Make sure we have valid numbers for comparison
+            const distA = typeof a.distance === 'number' ? a.distance : 0;
+            const distB = typeof b.distance === 'number' ? b.distance : 0;
+            return distB - distA;
+          });
         }
-
         // Create cards without maps first, then load maps in batches
         providersToRender.forEach((provider) => {
           const card = document.createElement("div");
@@ -1757,32 +1771,32 @@
 
         starsContainers.forEach((container) => {
           const rating = data.average_rating || 0;
-          container.innerHTML = ''; // Clear existing stars
-          
+          container.innerHTML = ""; // Clear existing stars
+
           // Create 5 new stars
           for (let i = 0; i < 5; i++) {
-            const star = document.createElement('span');
-            star.className = 'star';
-            
+            const star = document.createElement("span");
+            star.className = "star";
+
             if (i < Math.floor(rating)) {
               // Full star
-              star.innerHTML = '★';
-              star.classList.add('text-orange-400');
-              star.classList.remove('text-gray-300');
+              star.innerHTML = "★";
+              star.classList.add("text-orange-400");
+              star.classList.remove("text-gray-300");
             } else if (i === Math.floor(rating) && rating % 1 > 0) {
               // Partial star - use a hack with a gradient overlay
               const percentage = Math.round((rating % 1) * 100);
-              star.innerHTML = '★';
+              star.innerHTML = "★";
               star.style.background = `linear-gradient(90deg, #f97316 ${percentage}%, #d1d5db ${percentage}%)`;
-              star.style.webkitBackgroundClip = 'text';
-              star.style.webkitTextFillColor = 'transparent';
+              star.style.webkitBackgroundClip = "text";
+              star.style.webkitTextFillColor = "transparent";
             } else {
               // Empty star
-              star.innerHTML = '★';
-              star.classList.add('text-gray-300');
-              star.classList.remove('text-orange-400');
+              star.innerHTML = "★";
+              star.classList.add("text-gray-300");
+              star.classList.remove("text-orange-400");
             }
-            
+
             container.appendChild(star);
           }
         });
@@ -1790,7 +1804,9 @@
 
       // Fixed updateModalStars function
       function updateModalStars(rating) {
-        const modalStarsContainer = document.getElementById("modalStarsContainer");
+        const modalStarsContainer = document.getElementById(
+          "modalStarsContainer"
+        );
         modalStarsContainer.innerHTML = "";
 
         for (let i = 0; i < 5; i++) {
@@ -1802,7 +1818,8 @@
           if (i < Math.floor(rating)) {
             // Full star
             star.classList.add("text-orange-400");
-            star.innerHTML = '<path fill="currentColor" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />';
+            star.innerHTML =
+              '<path fill="currentColor" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />';
           } else if (i === Math.floor(rating) && rating % 1 > 0) {
             // Partial star
             star.classList.add("text-orange-400");
@@ -1811,7 +1828,9 @@
               <defs>
                 <linearGradient id="partialFill-modal-${i}" x1="0" x2="1" y1="0" y2="0">
                   <stop offset="${rating % 1}" stop-color="currentColor" />
-                  <stop offset="${rating % 1}" stop-color="#d1d5db" stop-opacity="1" />
+                  <stop offset="${
+                    rating % 1
+                  }" stop-color="#d1d5db" stop-opacity="1" />
                 </linearGradient>
               </defs>
               <path fill="url(#partialFill-modal-${i})" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />
@@ -1819,7 +1838,8 @@
           } else {
             // Empty star
             star.classList.add("text-gray-300");
-            star.innerHTML = '<path fill="currentColor" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />';
+            star.innerHTML =
+              '<path fill="currentColor" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />';
           }
 
           modalStarsContainer.appendChild(star);
@@ -2055,7 +2075,7 @@
                       ${Array.from({ length: 5 }, (_, i) =>
                         i < review.rating
                           ? '<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>'
-                          : '<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>'
+                          : '<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>'
                       ).join("")}
                     </div>
                     <span class="ml-2 text-sm font-medium text-gray-600">${

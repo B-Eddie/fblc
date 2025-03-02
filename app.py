@@ -2123,5 +2123,42 @@ def admin_dashboard():
     
     return render_template('admin.html', form=form, collections=collections, providers=providers)
 
+@app.route('/api/provider-appointments/<provider_id>')
+@login_required
+def api_provider_appointments(provider_id):
+    try:
+        date = request.args.get('date')
+        status = request.args.get('status', None)  # Get status parameter with None as default
+        
+        query = db.collection('appointments').where('provider_id', '==', provider_id)
+        
+        # Filter by date if provided
+        if date:
+            query = query.where('date', '==', date)
+        
+        # Filter by status if provided (e.g. 'confirmed')
+        if status:
+            query = query.where('status', '==', status)
+            
+        appointments = query.stream()
+        
+        appointment_list = []
+        for appt in appointments:
+            appt_data = appt.to_dict()
+            appointment_list.append({
+                'id': appt.id,
+                'date': appt_data.get('date'),
+                'time': appt_data.get('time'),
+                'type': appt_data.get('appointment_type'),  # Include appointment type
+                'status': appt_data.get('status'),
+                'user_id': appt_data.get('user_id'),
+                # Don't include sensitive data like user details
+            })
+        
+        return jsonify(appointment_list)
+    except Exception as e:
+        print(f"Error fetching provider appointments: {e}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=False)

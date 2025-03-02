@@ -743,6 +743,14 @@ def edit_business(business_id):
                     flash('Please provide a reward description for your loyalty program.')
                     return render_template('edit_business.html', form=form, business=business_data, here_api_key=here_api_key)
             
+            # Process inclusive care checkboxes (ADD THIS CODE)
+            lgbtq_friendly = 'lgbtq_friendly' in request.form
+            disability_accessible = 'disability_accessible' in request.form
+            cultural_responsive = 'cultural_responsive' in request.form
+            language_services = 'language_services' in request.form
+            sliding_scale = 'sliding_scale' in request.form
+            trauma_informed = 'trauma_informed' in request.form
+            
             # Update business data
             db.collection('providers').document(business_id).update({
                 'name': request.form.get('name'),
@@ -754,7 +762,14 @@ def edit_business(business_id):
                 'loyalty_enabled': loyalty_enabled,
                 'loyalty_visits_required': loyalty_visits_required,
                 'loyalty_reward': loyalty_reward,
-                'loyalty_message': loyalty_message
+                'loyalty_message': loyalty_message,
+                # Add inclusive care settings (ADD THIS CODE)
+                'lgbtq_friendly': lgbtq_friendly,
+                'disability_accessible': disability_accessible,
+                'cultural_responsive': cultural_responsive,
+                'language_services': language_services,
+                'sliding_scale': sliding_scale,
+                'trauma_informed': trauma_informed
             })
             
             flash('Business information and loyalty program updated successfully!')

@@ -913,16 +913,16 @@
           console.log("Sorting by nearest first");
           providersToRender.sort((a, b) => {
             // Make sure we have valid numbers for comparison
-            const distA = typeof a.distance === 'number' ? a.distance : 999;
-            const distB = typeof b.distance === 'number' ? b.distance : 999;
+            const distA = typeof a.distance === "number" ? a.distance : 999;
+            const distB = typeof b.distance === "number" ? b.distance : 999;
             return distA - distB;
           });
         } else if (sortDistance.value === "desc") {
           console.log("Sorting by farthest first");
           providersToRender.sort((a, b) => {
             // Make sure we have valid numbers for comparison
-            const distA = typeof a.distance === 'number' ? a.distance : 0;
-            const distB = typeof b.distance === 'number' ? b.distance : 0;
+            const distA = typeof a.distance === "number" ? a.distance : 0;
+            const distB = typeof b.distance === "number" ? b.distance : 0;
             return distB - distA;
           });
         }
@@ -963,79 +963,109 @@
 
           // Generate inclusive care badges
           const inclusiveBadges = [];
-          // Add debug logging to see what's happening
-          console.log("Provider inclusive care options:", {
-            lgbtq_friendly: provider.lgbtq_friendly,
-            disability_accessible: provider.disability_accessible,
-            cultural_responsive: provider.cultural_responsive,
-            language_services: provider.language_services,
-            sliding_scale: provider.sliding_scale,
-            trauma_informed: provider.trauma_informed,
+
+          // Helper function to check if a value is truthy in various formats
+          function isFeatureEnabled(value) {
+            if (value === undefined || value === null) return false;
+
+            // Check various truthy formats
+            if (
+              value === true ||
+              value === 1 ||
+              value === "1" ||
+              value === "true" ||
+              value === "yes" ||
+              value === "on" ||
+              (typeof value === "string" && value.toLowerCase() === "true")
+            ) {
+              return true;
+            }
+
+            return false;
+          }
+
+          // Add debug logging with more details
+          console.log("Provider inclusive care data:", provider.id, {
+            lgbtq_friendly:
+              provider.lgbtq_friendly +
+              " (type: " +
+              typeof provider.lgbtq_friendly +
+              ")",
+            disability_accessible:
+              provider.disability_accessible +
+              " (type: " +
+              typeof provider.disability_accessible +
+              ")",
+            cultural_responsive:
+              provider.cultural_responsive +
+              " (type: " +
+              typeof provider.cultural_responsive +
+              ")",
+            language_services:
+              provider.language_services +
+              " (type: " +
+              typeof provider.language_services +
+              ")",
+            sliding_scale:
+              provider.sliding_scale +
+              " (type: " +
+              typeof provider.sliding_scale +
+              ")",
+            trauma_informed:
+              provider.trauma_informed +
+              " (type: " +
+              typeof provider.trauma_informed +
+              ")",
           });
 
-          // Make type conversions more robust
-          if (
-            provider.lgbtq_friendly === true ||
-            provider.lgbtq_friendly === "true" ||
-            provider.lgbtq_friendly === 1
-          ) {
+          // Use the helper function for all badge checks
+          if (isFeatureEnabled(provider.lgbtq_friendly)) {
             inclusiveBadges.push(
               '<span class="inline-block px-2 py-1 mb-1 mr-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-full">LGBTQ+ Friendly</span>'
             );
           }
-          if (
-            provider.disability_accessible === true ||
-            provider.disability_accessible === "true" ||
-            provider.disability_accessible === 1
-          ) {
+
+          if (isFeatureEnabled(provider.disability_accessible)) {
             inclusiveBadges.push(
               '<span class="inline-block px-2 py-1 mb-1 mr-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">Disability-Accessible</span>'
             );
           }
-          if (
-            provider.cultural_responsive === true ||
-            provider.cultural_responsive === "true" ||
-            provider.cultural_responsive === 1
-          ) {
+
+          if (isFeatureEnabled(provider.cultural_responsive)) {
             inclusiveBadges.push(
               '<span class="inline-block px-2 py-1 mb-1 mr-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">Culturally Responsive</span>'
             );
           }
-          if (
-            provider.language_services === true ||
-            provider.language_services === "true" ||
-            provider.language_services === 1
-          ) {
+
+          if (isFeatureEnabled(provider.language_services)) {
             inclusiveBadges.push(
               '<span class="inline-block px-2 py-1 mb-1 mr-1 text-xs font-medium text-yellow-700 bg-yellow-100 rounded-full">Language Services</span>'
             );
           }
-          if (
-            provider.sliding_scale === true ||
-            provider.sliding_scale === "true" ||
-            provider.sliding_scale === 1
-          ) {
+
+          if (isFeatureEnabled(provider.sliding_scale)) {
             inclusiveBadges.push(
               '<span class="inline-block px-2 py-1 mb-1 mr-1 text-xs font-medium text-pink-700 bg-pink-100 rounded-full">Sliding Scale</span>'
             );
           }
-          if (
-            provider.trauma_informed === true ||
-            provider.trauma_informed === "true" ||
-            provider.trauma_informed === 1
-          ) {
+
+          if (isFeatureEnabled(provider.trauma_informed)) {
             inclusiveBadges.push(
               '<span class="inline-block px-2 py-1 mb-1 mr-1 text-xs font-medium text-indigo-700 bg-indigo-100 rounded-full">Trauma-Informed</span>'
             );
           }
 
+          console.log(
+            `Provider ${provider.id} has ${inclusiveBadges.length} badges`
+          );
+
           const inclusiveCareBadges =
             inclusiveBadges.length > 0
-              ? `<div class="flex flex-wrap mb-3">
-              ${inclusiveBadges.join("")}
-            </div>`
+              ? `<div class="flex flex-wrap mb-3">${inclusiveBadges.join(
+                  ""
+                )}</div>`
               : "";
-
+          console.log("Inclusive care badges:", inclusiveCareBadges);
           card.innerHTML = `
             <div id="${mapPlaceholderId}" class="flex items-center justify-center w-full h-48 bg-gray-100">
               <div class="flex space-x-4 animate-pulse">
@@ -1078,7 +1108,7 @@
               <div class="mb-3 text-gray-600"><strong>Distance:</strong> <span class="distance-display" data-provider-id="${
                 provider.id
               }">${distanceDisplay}</span></div>
-
+              
               ${inclusiveCareBadges}
 
               ${loyaltyBadge}
@@ -1819,7 +1849,7 @@
             // Full star
             star.classList.add("text-orange-400");
             star.innerHTML =
-              '<path fill="currentColor" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />';
+              '<path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />';
           } else if (i === Math.floor(rating) && rating % 1 > 0) {
             // Partial star
             star.classList.add("text-orange-400");
@@ -1833,13 +1863,13 @@
                   }" stop-color="#d1d5db" stop-opacity="1" />
                 </linearGradient>
               </defs>
-              <path fill="url(#partialFill-modal-${i})" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />
+              <path fill="url(#partialFill-modal-${i})" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
             `;
           } else {
             // Empty star
             star.classList.add("text-gray-300");
             star.innerHTML =
-              '<path fill="currentColor" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />';
+              '<path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />';
           }
 
           modalStarsContainer.appendChild(star);
@@ -1854,7 +1884,7 @@
             <stop offset="${percentage}" stop-color="#d1d5db" stop-opacity="1" />
           </linearGradient>
         </defs>
-        <path fill="url(#partialFill)" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />`;
+        <path fill="url(#partialFill)" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />`;
       }
 
       // Fill stars based on rating
@@ -1887,7 +1917,7 @@
             <stop offset="${percentage}" stop-color="transparent" stop-opacity="0" />
           </linearGradient>
         </defs>
-        <path fill="url(#partialFill)" stroke="currentColor" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />`;
+        <path fill="url(#partialFill)" stroke="currentColor" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />`;
       }
 
       // View reviews button click handler
@@ -2008,7 +2038,7 @@
             star.setAttribute("fill", "none");
             star.setAttribute("stroke", "currentColor");
             star.innerHTML =
-              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />';
+              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />';
           }
 
           modalStarsContainer.appendChild(star);
@@ -2074,7 +2104,7 @@
                     <div class="flex text-orange-400">
                       ${Array.from({ length: 5 }, (_, i) =>
                         i < review.rating
-                          ? '<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>'
+                          ? '<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" /></svg>'
                           : '<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>'
                       ).join("")}
                     </div>

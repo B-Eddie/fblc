@@ -231,6 +231,154 @@
       </div>
     </div>
 
+    <!-- Add this after the Loyalty Program section -->
+    <div class="mt-8 mb-6">
+      <h3 class="mb-4 text-xl font-semibold text-orange-600">
+        Inclusive Care Options
+      </h3>
+
+      <div class="p-6 border border-orange-200 rounded-lg bg-orange-50">
+        <p class="mb-4 text-sm text-gray-700">
+          Let potential clients know about your commitment to inclusive and
+          accessible care
+        </p>
+
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div class="flex items-start">
+            <input
+              type="checkbox"
+              id="lgbtq_friendly"
+              name="lgbtq_friendly"
+              class="w-4 h-4 mt-1 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+              {%
+              if
+              business.lgbtq_friendly
+              %}checked{%
+              endif
+              %}
+            />
+            <label for="lgbtq_friendly" class="ml-2">
+              <span class="font-medium text-gray-700">LGBTQ+ Friendly</span>
+              <p class="text-xs text-gray-500">
+                Affirming care for LGBTQ+ individuals
+              </p>
+            </label>
+          </div>
+
+          <div class="flex items-start">
+            <input
+              type="checkbox"
+              id="disability_accessible"
+              name="disability_accessible"
+              class="w-4 h-4 mt-1 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+              {%
+              if
+              business.disability_accessible
+              %}checked{%
+              endif
+              %}
+            />
+            <label for="disability_accessible" class="ml-2">
+              <span class="font-medium text-gray-700"
+                >Disability-Accessible</span
+              >
+              <p class="text-xs text-gray-500">
+                Facilities and services accessible to all abilities
+              </p>
+            </label>
+          </div>
+
+          <div class="flex items-start">
+            <input
+              type="checkbox"
+              id="cultural_responsive"
+              name="cultural_responsive"
+              class="w-4 h-4 mt-1 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+              {%
+              if
+              business.cultural_responsive
+              %}checked{%
+              endif
+              %}
+            />
+            <label for="cultural_responsive" class="ml-2">
+              <span class="font-medium text-gray-700"
+                >Culturally Responsive</span
+              >
+              <p class="text-xs text-gray-500">
+                Culturally sensitive care approach
+              </p>
+            </label>
+          </div>
+
+          <div class="flex items-start">
+            <input
+              type="checkbox"
+              id="language_services"
+              name="language_services"
+              class="w-4 h-4 mt-1 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+              {%
+              if
+              business.language_services
+              %}checked{%
+              endif
+              %}
+            />
+            <label for="language_services" class="ml-2">
+              <span class="font-medium text-gray-700">Language Services</span>
+              <p class="text-xs text-gray-500">
+                Multiple languages or interpretation available
+              </p>
+            </label>
+          </div>
+
+          <div class="flex items-start">
+            <input
+              type="checkbox"
+              id="sliding_scale"
+              name="sliding_scale"
+              class="w-4 h-4 mt-1 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+              {%
+              if
+              business.sliding_scale
+              %}checked{%
+              endif
+              %}
+            />
+            <label for="sliding_scale" class="ml-2">
+              <span class="font-medium text-gray-700">Sliding Scale Fees</span>
+              <p class="text-xs text-gray-500">
+                Flexible payment options based on income
+              </p>
+            </label>
+          </div>
+
+          <div class="flex items-start">
+            <input
+              type="checkbox"
+              id="trauma_informed"
+              name="trauma_informed"
+              class="w-4 h-4 mt-1 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+              {%
+              if
+              business.trauma_informed
+              %}checked{%
+              endif
+              %}
+            />
+            <label for="trauma_informed" class="ml-2">
+              <span class="font-medium text-gray-700"
+                >Trauma-Informed Care</span
+              >
+              <p class="text-xs text-gray-500">
+                Specialized approach for trauma survivors
+              </p>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="flex items-center justify-between">
       <button
         class="px-4 py-2 font-bold text-white transition duration-300 bg-orange-500 rounded hover:bg-orange-600 focus:outline-none focus:shadow-outline"

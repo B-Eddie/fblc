@@ -693,8 +693,8 @@
           searchMatch =
             (appointment.client_name &&
               appointment.client_name.toLowerCase().includes(searchValue)) ||
-            (appointment.type &&
-              appointment.type.toLowerCase().includes(searchValue)) ||
+            (appointment.appointment_type &&
+              appointment.appointment_type.toLowerCase().includes(searchValue)) ||
             (appointment.notes &&
               appointment.notes.toLowerCase().includes(searchValue));
         }
@@ -780,7 +780,7 @@
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="text-sm text-gray-900">${
-              appointment.type || "General"
+              appointment.appointment_type || "General"
             }</div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
@@ -1125,7 +1125,7 @@
                   </svg>
                   <div>
                     <span class="font-medium">Type:</span>
-                    <span>${appointment.type || "General"}</span>
+                    <span>${appointment.appointment_type || "General"}</span>
                   </div>
                 </div>
               </div>
@@ -1407,7 +1407,7 @@
             `"${appointment.client_name || ""}"`,
             `"${appointment.client_email || ""}"`,
             `"${appointment.client_phone || ""}"`,
-            `"${appointment.type || ""}"`,
+            `"${appointment.appointment_type || ""}"`,
             `"${appointment.status || ""}"`,
             `"${
               appointment.notes ? appointment.notes.replace(/"/g, '""') : ""
@@ -1714,7 +1714,7 @@
           return {
             id: appointment.id,
             title: `${appointment.client_name || "Unknown"} - ${
-              appointment.type || "General"
+              appointment.appointment_type || "General"
             }`,
             start: startDate,
             allDay: !appointment.time,
@@ -1723,7 +1723,7 @@
               client: appointment.client_name,
               phone: appointment.client_phone,
               email: appointment.client_email,
-              type: appointment.type,
+              type: appointment.appointment_type,
             },
           };
         });

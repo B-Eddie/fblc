@@ -300,7 +300,7 @@ def find_providers():
     providers_list = []
     for provider in providers:
         providers_list.append(provider.to_dict())
-    
+
     # Count specialties
     specialty_counts = {}
     for provider in providers_list:
@@ -324,7 +324,7 @@ def find_providers():
         remaining_defaults = [s for s in default_specialties if s not in top_specialties]
         top_specialties.extend(remaining_defaults[:5-len(top_specialties)])
     
-    return render_template('find_providers.html', top_specialties=top_specialties, providers=providers)
+    return render_template('find_providers.html', top_specialties=top_specialties, providers=providers_list)
 
 @app.route('/book_appointment', methods=['GET', 'POST'])
 @login_required
@@ -499,13 +499,36 @@ def api_providers():
         except:
             return None
     
-    provider_list = [{
-        'id': doc.id,
-        'name': doc.to_dict()['name'],
-        'specialty': doc.to_dict()['specialty'],
-        'distance': round(geodesic(user_coords, geocode_address(doc.to_dict().get('address', ''))).kilometers, 1) if user_coords and geocode_address(doc.to_dict().get('address', '')) else None,
-        'address': doc.to_dict()['address'],
-    } for doc in providers]
+    provider_list = []
+    for doc in providers:
+        provider_data = doc.to_dict()
+        distance = None
+        
+        if user_coords and geocode_address(provider_data.get('address', '')):
+            distance = round(geodesic(
+                user_coords, 
+                geocode_address(provider_data.get('address', ''))
+            ).kilometers, 1)
+        
+        provider_list.append({
+            'id': doc.id,
+            'name': provider_data.get('name', ''),
+            'specialty': provider_data.get('specialty', ''),
+            'distance': distance,
+            'address': provider_data.get('address', ''),
+            'phone': provider_data.get('phone', ''),
+            # Include inclusive care options
+            'lgbtq_friendly': provider_data.get('lgbtq_friendly', False),
+            'disability_accessible': provider_data.get('disability_accessible', False),
+            'cultural_responsive': provider_data.get('cultural_responsive', False),
+            'language_services': provider_data.get('language_services', False),
+            'sliding_scale': provider_data.get('sliding_scale', False),
+            'trauma_informed': provider_data.get('trauma_informed', False),
+            # Include loyalty program data
+            'loyalty_enabled': provider_data.get('loyalty_enabled', False),
+            'loyalty_visits_required': provider_data.get('loyalty_visits_required', 10),
+            'loyalty_reward': provider_data.get('loyalty_reward', '')
+        })
     
     return jsonify(provider_list)
 

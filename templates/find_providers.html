@@ -931,7 +931,7 @@
             <div class="p-2 mt-3 border border-orange-100 rounded-md bg-orange-50">
               <div class="flex items-center text-xs font-medium text-orange-700">
                 <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.29-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.799-2.034c-.784-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.29-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.799-2.034c-.784-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
                 </svg>
                 Loyalty Program
               </div>
@@ -1656,8 +1656,9 @@
               errorNotification.style.opacity = "0";
               setTimeout(() => errorNotification.remove(), 500);
             }, 5000);
-
-            // Reset button state
+          })
+          .finally(() => {
+            // Always reset button state regardless of success or failure
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
           });
@@ -1749,50 +1750,91 @@
           }`;
         });
 
-        async function loadProviderReviews(providerId) {
-          try {
-            const response = await fetch(`/api/provider-reviews/${providerId}`);
-            const data = await response.json();
+        // Update star display
+        const starsContainers = document.querySelectorAll(
+          `.stars-container[data-provider-id="${providerId}"]`
+        );
+
+        starsContainers.forEach((container) => {
+          const rating = data.average_rating || 0;
+          container.innerHTML = ''; // Clear existing stars
+          
+          // Create 5 new stars
+          for (let i = 0; i < 5; i++) {
+            const star = document.createElement('span');
+            star.className = 'star';
             
-            if (data.error) {
-              console.error("Error fetching reviews:", data.error);
-              return;
+            if (i < Math.floor(rating)) {
+              // Full star
+              star.innerHTML = '★';
+              star.classList.add('text-orange-400');
+              star.classList.remove('text-gray-300');
+            } else if (i === Math.floor(rating) && rating % 1 > 0) {
+              // Partial star - use a hack with a gradient overlay
+              const percentage = Math.round((rating % 1) * 100);
+              star.innerHTML = '★';
+              star.style.background = `linear-gradient(90deg, #f97316 ${percentage}%, #d1d5db ${percentage}%)`;
+              star.style.webkitBackgroundClip = 'text';
+              star.style.webkitTextFillColor = 'transparent';
+            } else {
+              // Empty star
+              star.innerHTML = '★';
+              star.classList.add('text-gray-300');
+              star.classList.remove('text-orange-400');
             }
-
-            // Extract rating and review count
-            const averageRating = data.average_rating || 0;
-            const reviewCount = data.review_count || 0;
-
-            // Select elements based on provider ID
-            const starsContainer = document.querySelector(`.stars-container[data-provider-id="${providerId}"]`);
-            const ratingElement = document.querySelector(`.provider-rating[data-provider-id="${providerId}"]`);
-            const reviewCountElement = document.querySelector(`.review-count[data-provider-id="${providerId}"]`);
-
-            // Update rating text
-            ratingElement.textContent = averageRating.toFixed(1);
-            reviewCountElement.textContent = `${reviewCount} review${reviewCount !== 1 ? 's' : ''}`;
-
-            // Generate stars
-            const filledStars = Math.round(averageRating);
-            starsContainer.innerHTML = Array(5)
-              .fill()
-              .map((_, i) =>
-                i < filledStars
-                  ? '<span class="text-orange-400 star">★</span>'
-                  : '<span class="text-gray-300 star">★</span>'
-              )
-              .join("");
-          } catch (error) {
-            console.error("Error loading provider reviews:", error);
+            
+            container.appendChild(star);
           }
-        }
-
-        // Example: Call function for a provider (Replace with dynamic provider ID)
-        document.addEventListener("DOMContentLoaded", () => {
-          const providerId = "provider123"; // Replace with actual provider ID
-          loadProviderReviews(providerId);
         });
+      }
 
+      // Fixed updateModalStars function
+      function updateModalStars(rating) {
+        const modalStarsContainer = document.getElementById("modalStarsContainer");
+        modalStarsContainer.innerHTML = "";
+
+        for (let i = 0; i < 5; i++) {
+          const star = document.createElement("svg");
+          star.classList.add("w-5", "h-5");
+          star.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+          star.setAttribute("viewBox", "0 0 24 24");
+
+          if (i < Math.floor(rating)) {
+            // Full star
+            star.classList.add("text-orange-400");
+            star.innerHTML = '<path fill="currentColor" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />';
+          } else if (i === Math.floor(rating) && rating % 1 > 0) {
+            // Partial star
+            star.classList.add("text-orange-400");
+            const percentage = Math.round((rating % 1) * 100);
+            star.innerHTML = `
+              <defs>
+                <linearGradient id="partialFill-modal-${i}" x1="0" x2="1" y1="0" y2="0">
+                  <stop offset="${rating % 1}" stop-color="currentColor" />
+                  <stop offset="${rating % 1}" stop-color="#d1d5db" stop-opacity="1" />
+                </linearGradient>
+              </defs>
+              <path fill="url(#partialFill-modal-${i})" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />
+            `;
+          } else {
+            // Empty star
+            star.classList.add("text-gray-300");
+            star.innerHTML = '<path fill="currentColor" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />';
+          }
+
+          modalStarsContainer.appendChild(star);
+        }
+      }
+
+      // Simplified and improved createPartialStar function - no longer needed with the above approach
+      function createPartialStar(percentage) {
+        return `<defs>
+          <linearGradient id="partialFill" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="${percentage}" stop-color="currentColor" />
+            <stop offset="${percentage}" stop-color="#d1d5db" stop-opacity="1" />
+          </linearGradient>
+        </defs>
+        <path fill="url(#partialFill)" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />`;
       }
 
       // Fill stars based on rating

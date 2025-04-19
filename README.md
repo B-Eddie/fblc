@@ -1,4 +1,4 @@
-# HealthHhb
+# HealthHub
 
 The all in one app for hour healthcare needs!
 
